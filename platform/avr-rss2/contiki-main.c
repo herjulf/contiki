@@ -308,6 +308,11 @@ initialize(void)
   memcpy(&uip_lladdr.addr, &addr.u8, sizeof(linkaddr_t));
 #endif
 
+#if TIMESYNCH_CONF_ENABLED
+  timesynch_init();
+  timesynch_set_authority_level((linkaddr_node_addr.u8[0] << 4) + 16);
+#endif /* TIMESYNCH_CONF_ENABLED */
+
   rf230_set_pan_addr(params_get_panid(), params_get_panaddr(), (uint8_t *)&addr.u8);
   rf230_set_channel(params_get_channel());
   rf230_set_txpower(params_get_txpower());

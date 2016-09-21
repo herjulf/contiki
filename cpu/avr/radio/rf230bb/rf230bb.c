@@ -144,10 +144,13 @@ uint8_t ack_pending,ack_seqnum;
 #warning RF230 Untested Configuration!
 #endif
 
-struct timestamp {
-  uint16_t time;
-  uint8_t authority_level;
-};
+struct timesynch_msg msg;
+//  memcpy(&msg, packetbuf_dataptr(), sizeof(msg));
+
+//struct timestamp {
+//  uint16_t time;
+//  uint8_t authority_level;
+//};
 
 #define FOOTER1_CRC_OK      0x80
 #define FOOTER1_CORRELATION 0x7f
@@ -272,7 +275,20 @@ get_packet_timestamp(void)
   last_packet_timestamp -= US_TO_RTIMERTICKS(8);
   return last_packet_timestamp;
 }
-
+/* Poll mode disabled by default */
+static uint8_t poll_mode = 0;
+/*---------------------------------------------------------------------------*/
+static void
+set_poll_mode(uint8_t enable)
+{
+  poll_mode = enable;
+  if(poll_mode) {
+    /* Disable interrupts */
+  } else {
+    /* Initialize and enable interrupts */
+    /* TODO: enable E_MMAC_INT_RX_HEADER & filter out frames after header rx */
+  }
+}
 /*---------------------------------------------------------------------------*/
 static radio_result_t
 get_value(radio_param_t param, radio_value_t *value)
@@ -311,7 +327,7 @@ get_value(radio_param_t param, radio_value_t *value)
 #endif
     return RADIO_RESULT_OK;
   case RADIO_PARAM_TXPOWER:
-    //*value = get_tx_power();
+    *value = rf230_get_txpower();
     return RADIO_RESULT_OK;
   case RADIO_PARAM_CCA_THRESHOLD:
     //*value = get_cca_threshold();
@@ -320,16 +336,16 @@ get_value(radio_param_t param, radio_value_t *value)
     *value = rf230_get_raw_rssi();
     return RADIO_RESULT_OK;
   case RADIO_CONST_CHANNEL_MIN:
-    //*value = CC2538_RF_CHANNEL_MIN;
+    *value = RF230_MIN_CHANNEL;
     return RADIO_RESULT_OK;
   case RADIO_CONST_CHANNEL_MAX:
-    //*value = CC2538_RF_CHANNEL_MAX;
+    *value = RF230_MAX_CHANNEL;;
     return RADIO_RESULT_OK;
   case RADIO_CONST_TXPOWER_MIN:
-    //*value = OUTPUT_POWER_MIN;
+    *value = TX_PWR_MIN;
     return RADIO_RESULT_OK;
   case RADIO_CONST_TXPOWER_MAX:
-    //*value = OUTPUT_POWER_MAX;
+    *value = TX_PWR_MAX;
     return RADIO_RESULT_OK;
   default:
     return RADIO_RESULT_NOT_SUPPORTED;
@@ -352,17 +368,12 @@ set_value(radio_param_t param, radio_value_t value)
     return RADIO_RESULT_INVALID_VALUE;
   case RADIO_PARAM_CHANNEL:
 
-#if 0
-    if(value < CC2538_RF_CHANNEL_MIN ||
-       value > CC2538_RF_CHANNEL_MAX) {
+    if(value < RF230_MAX_CHANNEL ||
+       value > RF230_MAX_CHANNEL) {
       return RADIO_RESULT_INVALID_VALUE;
     }
 
-
-    if(set_channel(value) == CC2538_RF_CHANNEL_SET_ERROR) {
-      return RADIO_RESULT_ERROR;
-    }
-#endif
+    rf230_set_channel(value);
     return RADIO_RESULT_OK;
   
   case RADIO_PARAM_TX_MODE:
@@ -383,14 +394,15 @@ set_value(radio_param_t param, radio_value_t value)
 
     //set_frame_filtering((value & RADIO_RX_MODE_ADDRESS_FILTER) != 0);
     //set_auto_ack((value & RADIO_RX_MODE_AUTOACK) != 0);
-
+    
+    set_poll_mode((value & RADIO_RX_MODE_POLL_MODE) != 0);
     return RADIO_RESULT_OK;
 
   case RADIO_PARAM_TXPOWER:
     if(value < TX_PWR_MIN || value > TX_PWR_MAX) { 
       return RADIO_RESULT_INVALID_VALUE;
     }
-    set_tx_power(value);
+    rf230_set_txpower(value);
     return RADIO_RESULT_OK;
 
   case RADIO_PARAM_CCA_THRESHOLD:
