@@ -253,6 +253,8 @@ static int rf230_receiving_packet(void);
 static int rf230_pending_packet(void);
 static int rf230_cca(void);
 static rtimer_clock_t get_packet_timestamp(void);
+
+/* SFD timestamp in RTIMER ticks */
 static volatile uint32_t last_packet_timestamp = 0;
 
 uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
@@ -262,10 +264,23 @@ uint32_t get_SFD_timestamp(void)
 {
   uint8_t hh, hl, lh, ll;
   uint32_t t;
-  hh = hal_register_read(RG_SCTSRHH);
-  hl = hal_register_read(RG_SCTSRHL);
-  lh = hal_register_read(RG_SCTSRLH);
   ll = hal_register_read(RG_SCTSRLL);
+  lh = hal_register_read(RG_SCTSRLH);
+  hl = hal_register_read(RG_SCTSRHL);
+  hh = hal_register_read(RG_SCTSRHH);
+  t = (((uint32_t) hh)<<24) | (((uint32_t) hl)<<16) | (((uint32_t) lh)<<8) | (((uint32_t) ll));
+  return t;
+}
+
+static
+uint32_t get_symbol_counter(void) 
+{
+  uint8_t hh, hl, lh, ll;
+  uint32_t t;
+  ll = hal_register_read(RG_SCCNTLL);
+  lh = hal_register_read(RG_SCCNTLH);
+  hl = hal_register_read(RG_SCCNTHL);
+  hh = hal_register_read(RG_SCCNTHH);
   t = (((uint32_t) hh)<<24) | (((uint32_t) hl)<<16) | (((uint32_t) lh)<<8) | (((uint32_t) ll));
   return t;
 }
@@ -277,12 +292,8 @@ uint32_t get_SFD_timestamp(void)
 static rtimer_clock_t
 get_packet_timestamp(void)
 {
-  /* Wait for an edge */
-  //uint32_t t = u32MMAC_GetTime();
-  uint32_t t = get_SFD_timestamp();
-  //while(u32MMAC_GetTime() == t);
   /* Save SFD timestamp, converted from radio timer to RTIMER */
-  last_packet_timestamp = RTIMER_NOW() - RADIO_TO_RTIMER(get_SFD_timestamp() - (u32MMAC_GetRxTime() - 1));
+  last_packet_timestamp = RTIMER_NOW() - RADIO_TO_RTIMER(get_symbol_counter() - get_SFD_timestamp() - 1);
   /* The remaining measured error is typically in range 0..16 usec.
    * Center it around zero, in the -8..+8 usec range. */
   last_packet_timestamp -= US_TO_RTIMERTICKS(8);
