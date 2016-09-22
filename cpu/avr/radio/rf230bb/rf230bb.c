@@ -144,13 +144,10 @@ uint8_t ack_pending,ack_seqnum;
 #warning RF230 Untested Configuration!
 #endif
 
-struct timesynch_msg msg;
-//  memcpy(&msg, packetbuf_dataptr(), sizeof(msg));
-
-//struct timestamp {
-//  uint16_t time;
-//  uint8_t authority_level;
-//};
+struct timestamp {
+  uint16_t time;
+  uint8_t authority_level;
+};
 
 #define FOOTER1_CRC_OK      0x80
 #define FOOTER1_CORRELATION 0x7f
@@ -260,21 +257,38 @@ static volatile uint32_t last_packet_timestamp = 0;
 
 uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
 
+static
+uint32_t get_SFD_timestamp(void) 
+{
+  uint8_t hh, hl, lh, ll;
+  uint32_t t;
+  hh = hal_register_read(RG_SCTSRHH);
+  hl = hal_register_read(RG_SCTSRHL);
+  lh = hal_register_read(RG_SCTSRLH);
+  ll = hal_register_read(RG_SCTSRLL);
+  t = (((uint32_t) hh)<<24) | (((uint32_t) hl)<<16) | (((uint32_t) lh)<<8) | (((uint32_t) ll));
+  return t;
+}
+
+#define SYS_CTRL_16MHZ               16000000
+#define RADIO_TO_RTIMER(X) ((uint32_t)((uint64_t)(X) * RTIMER_ARCH_SECOND / SYS_CTRL_16MHZ))
+
 /*---------------------------------------------------------------------------*/
 static rtimer_clock_t
 get_packet_timestamp(void)
 {
   /* Wait for an edge */
-  uint32_t t; // = u32MMAC_GetTime();
+  //uint32_t t = u32MMAC_GetTime();
+  uint32_t t = get_SFD_timestamp();
   //while(u32MMAC_GetTime() == t);
   /* Save SFD timestamp, converted from radio timer to RTIMER */
-  //  last_packet_timestamp = RTIMER_NOW() -
-  //  RADIO_TO_RTIMER((uint32_t)(u32MMAC_GetTime() - (u32MMAC_GetRxTime() - 1)));
+  last_packet_timestamp = RTIMER_NOW() - RADIO_TO_RTIMER(get_SFD_timestamp() - (u32MMAC_GetRxTime() - 1));
   /* The remaining measured error is typically in range 0..16 usec.
    * Center it around zero, in the -8..+8 usec range. */
   last_packet_timestamp -= US_TO_RTIMERTICKS(8);
   return last_packet_timestamp;
 }
+
 /* Poll mode disabled by default */
 static uint8_t poll_mode = 0;
 /*---------------------------------------------------------------------------*/
@@ -283,9 +297,11 @@ set_poll_mode(uint8_t enable)
 {
   poll_mode = enable;
   if(poll_mode) {
+    hal_register_write(RG_IRQ_MASK, 0x0);
     /* Disable interrupts */
   } else {
     /* Initialize and enable interrupts */
+    hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
     /* TODO: enable E_MMAC_INT_RX_HEADER & filter out frames after header rx */
   }
 }
@@ -366,9 +382,10 @@ set_value(radio_param_t param, radio_value_t value)
       return RADIO_RESULT_OK;
     }
     return RADIO_RESULT_INVALID_VALUE;
+
   case RADIO_PARAM_CHANNEL:
 
-    if(value < RF230_MAX_CHANNEL ||
+    if(value < RF230_MIN_CHANNEL ||
        value > RF230_MAX_CHANNEL) {
       return RADIO_RESULT_INVALID_VALUE;
     }
@@ -1111,7 +1128,7 @@ rf230_transmit(unsigned short payload_len)
   int txpower;
   uint8_t total_len;
   uint8_t tx_result;
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
   struct timestamp timestamp;
 #endif /* RF230_CONF_TIMESTAMPS */
 
@@ -1177,7 +1194,7 @@ rf230_transmit(unsigned short payload_len)
 
   total_len = payload_len + AUX_LEN;
 
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
   rtimer_clock_t txtime = timesynch_time();
 #endif /* RF230_CONF_TIMESTAMPS */
 
@@ -1232,7 +1249,7 @@ rf230_transmit(unsigned short payload_len)
     set_txpower(txpower & 0xff);
   }
  
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
   setup_time_for_transmission = txtime - timestamp.time;
 
   if(num_transmissions < 10000) {
@@ -1301,7 +1318,7 @@ rf230_prepare(const void *payload, unsigned short payload_len)
 {
   int ret = 0;
   uint8_t total_len,*pbuf;
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
   struct timestamp timestamp;
 #endif
 #if RF230_CONF_CHECKSUM
@@ -1342,7 +1359,7 @@ rf230_prepare(const void *payload, unsigned short payload_len)
   pbuf+=CHECKSUM_LEN;
 #endif
 
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
   timestamp.authority_level = timesynch_authority_level();
   timestamp.time = timesynch_time();
   memcpy(pbuf,&timestamp,TIMESTAMP_LEN);
@@ -1509,7 +1526,7 @@ rf230_interrupt(void)
 if (RF230_receive_on) {
   DEBUGFLOW('+');
 #endif
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
   interrupt_time = timesynch_time();
   interrupt_time_set = 1;
 #endif /* RF230_CONF_TIMESTAMPS */
@@ -1627,7 +1644,7 @@ rf230_read(void *buf, unsigned short bufsize)
 #if RF230_CONF_CHECKSUM
   uint16_t checksum;
 #endif
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
   struct timestamp t;
 #endif
 #if RF230_INSERTACK
@@ -1652,7 +1669,7 @@ rf230_read(void *buf, unsigned short bufsize)
     return 0;
   }
 
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
   if(interrupt_time_set) {
     rf230_time_of_arrival = interrupt_time;
     interrupt_time_set = 0;
@@ -1700,7 +1717,7 @@ rf230_read(void *buf, unsigned short bufsize)
   memcpy(&checksum,framep,CHECKSUM_LEN);
 #endif /* RF230_CONF_CHECKSUM */
   framep+=CHECKSUM_LEN;
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
   memcpy(&t,framep,TIMESTAMP_LEN);
 #endif /* RF230_CONF_TIMESTAMPS */
   framep+=TIMESTAMP_LEN;
@@ -1742,7 +1759,7 @@ rf230_read(void *buf, unsigned short bufsize)
 
     RIMESTATS_ADD(rx);
 
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_FIXTHIS
     rf230_time_of_departure =
       t.time +
       setup_time_for_transmission +
