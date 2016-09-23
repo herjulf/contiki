@@ -58,4 +58,6 @@
 #define TSCH_CALLBACK_JOINING_NETWORK tsch_rpl_callback_joining_network
 #define TSCH_CALLBACK_LEAVING_NETWORK tsch_rpl_callback_leaving_network
 
+#define TSCH_LOG_CONF_LEVEL 3
+
 #endif /* PROJECT_CONF_H_ */

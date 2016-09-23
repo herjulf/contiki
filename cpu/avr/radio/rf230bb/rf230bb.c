@@ -68,7 +68,10 @@
 #include "net/rime/rimestats.h"
 #include "net/netstack.h"
 
+
+/* TSCH */
 #define WITH_SEND_CCA 0
+#define RF230_CONF_AUTOACK 0
 
 /* Timestamps have not been tested */
 #if RF230_CONF_TIMESTAMPS
@@ -87,13 +90,11 @@
 
 /* Autoack setting ignored in non-extended mode */
 #ifndef RF230_CONF_AUTOACK
-#define RF230_CONF_AUTOACK 1
+#define RF230_CONF_AUTOACK 0
 #endif
 
 /* We need to turn off autoack in promiscuous mode */
-#if RF230_CONF_AUTOACK
 static bool is_promiscuous;
-#endif
 
 /* RF230_CONF_FRAME_RETRIES is 1 plus the number written to the hardware. */
 /* Valid range 1-16, zero disables extended mode. */
@@ -260,6 +261,20 @@ static volatile uint32_t last_packet_timestamp = 0;
 uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
 
 static
+foo(int a)
+{
+  /* Set up number of automatic retries 0-15
+   * (0 implies PLL_ON sends instead of the extended TX_ARET mode */
+  hal_subregister_write(SR_MAX_FRAME_RETRIES,
+      (RF230_CONF_FRAME_RETRIES > 0) ? (RF230_CONF_FRAME_RETRIES - 1) : 0 );
+ 
+ /* Set up carrier sense/clear channel assesment parameters for extended operating mode */
+  hal_subregister_write(SR_MAX_CSMA_RETRIES, RF230_CONF_CSMA_RETRIES );//highest allowed retries
+  hal_register_write(RG_CSMA_BE, 0x80);       //min backoff exponent 0, max 8 (highest allowed)
+  hal_register_write(RG_CSMA_SEED_0,hal_register_read(RG_PHY_RSSI) );//upper two RSSI reg bits RND_VALUE are random 
+}
+
+static
 uint32_t get_SFD_timestamp(void) 
 {
   uint8_t hh, hl, lh, ll;
@@ -303,12 +318,17 @@ get_packet_timestamp(void)
 /* Poll mode disabled by default */
 static uint8_t poll_mode = 0;
 /*---------------------------------------------------------------------------*/
+
+static radio_status_t radio_set_trx_state(uint8_t new_state);
+
+
 static void
 set_poll_mode(uint8_t enable)
 {
   poll_mode = enable;
   if(poll_mode) {
-    hal_register_write(RG_IRQ_MASK, 0x0);
+    radio_set_trx_state(RX_ON);
+    //hal_register_write(RG_IRQ_MASK, 0x0);
     /* Disable interrupts */
   } else {
     /* Initialize and enable interrupts */
@@ -1062,6 +1082,7 @@ void rf230_warm_reset(void) {
   
   hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
 
+#if 0
   /* Set up number of automatic retries 0-15
    * (0 implies PLL_ON sends instead of the extended TX_ARET mode */
   hal_subregister_write(SR_MAX_FRAME_RETRIES,
@@ -1071,6 +1092,8 @@ void rf230_warm_reset(void) {
   hal_subregister_write(SR_MAX_CSMA_RETRIES, RF230_CONF_CSMA_RETRIES );//highest allowed retries
   hal_register_write(RG_CSMA_BE, 0x80);       //min backoff exponent 0, max 8 (highest allowed)
   hal_register_write(RG_CSMA_SEED_0,hal_register_read(RG_PHY_RSSI) );//upper two RSSI reg bits RND_VALUE are random in rf231
+#endif
+
  // hal_register_write(CSMA_SEED_1,42 );
 
   /* CCA Mode Mode 1=Energy above threshold  2=Carrier sense only  3=Both 0=Either (RF231 only) */
