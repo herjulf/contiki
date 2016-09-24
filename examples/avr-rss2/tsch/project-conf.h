@@ -60,4 +60,8 @@
 
 #define TSCH_LOG_CONF_LEVEL 3
 
+/* For test avoid 26 */
+#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 15, 25, 11, 20 }
+
+
 #endif /* PROJECT_CONF_H_ */

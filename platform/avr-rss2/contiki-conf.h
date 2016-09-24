@@ -53,15 +53,37 @@
 #endif
 
 
-// FROM SKY SHOULD BE RADIO files
-/* Delay between GO signal and SFD: radio fixed delay + 4Bytes preample + 1B SFD -- 1Byte time is 32us
- * ~327us + 129preample = 456 us */
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(456))
+
+/* Delay between GO signal and SFD
+ * Measured 153us between GO and preamble. Add 5 bytes (preamble + SFD) air time: 153+5*32 = 313 */
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313))
 /* Delay between GO signal and start listening
- * ~50us delay + 129preample + ?? = 183 us */
-#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(183))
+ * Measured 104us: between GO signal and start listening */
+#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
 /* Delay between the SFD finishes arriving and it is detected in software */
-#define RADIO_DELAY_BEFORE_DETECT 0
+#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(14))
+
+
+#define TSCH_DEBUG 1
+
+#if TSCH_DEBUG
+#define TSCH_DEBUG_INIT() do { } while(0);
+#define TSCH_DEBUG_INTERRUPT() do {} while(0);
+
+#define _TSCH_DEBUG_RX_EVENT() do { \
+    ledtimer_red = 1000;leds_on(LEDS_RED); } while(0);
+
+#define _TSCH_DEBUG_TX_EVENT() do { \
+    ledtimer_yellow = 1000;leds_on(LEDS_YELLOW); } while(0);
+
+#define TSCH_DEBUG_SLOT_START() do { \
+    ledtimer_red = 1000;leds_on(LEDS_RED); } while(0);
+
+#define TSCH_DEBUG_SLOT_END() do { \
+    ledtimer_yellow = 1000;leds_on(LEDS_YELLOW); } while(0);
+
+#endif /* TSCH_DEBUG */
+
 
 #include <stdint.h>
 
