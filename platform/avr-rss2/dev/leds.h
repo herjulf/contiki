@@ -7,6 +7,8 @@
 #define LEDS_RED                      4
 #define LEDS_ALL                      7
 
+extern uint16_t ledtimer_red, ledtimer_yellow;
+
 void leds_init(void); /* Initialize the LEDs driver. */
 unsigned char leds_get(void); /* Get the status of a LED. */
 void leds_on(unsigned char ledv); /* Turn on a set of LEDs. */
