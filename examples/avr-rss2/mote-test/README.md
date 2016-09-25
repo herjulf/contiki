@@ -62,3 +62,7 @@ References
 ----------
 https://github.com/herjulf/contiki/tree/mote-test
 https://github.com/herjulf/contiki/tree/mote-test/examples/avr-rss2/mote-test
+
+Full Program Setup
+------------------
+http://www.radio-sensors.com/download/rss2-test/rss2-program.jpg
