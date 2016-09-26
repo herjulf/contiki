@@ -68,10 +68,12 @@
 
 #if TSCH_DEBUG
 #define TSCH_DEBUG_INIT() do { } while(0);
-#define TSCH_DEBUG_INTERRUPT() do {} while(0);
 
-#define _TSCH_DEBUG_RX_EVENT() do { \
-    ledtimer_red = 1000;leds_on(LEDS_RED); } while(0);
+#define __TSCH_DEBUG_INTERRUPT() do { \
+    ledtimer_green = 1000;leds_on(LEDS_GREEN); } while(0);
+
+#define __TSCH_DEBUG_RX_EVENT() do { \
+    ledtimer_blue = 1000;leds_on(LEDS_BLUE); } while(0);
 
 #define _TSCH_DEBUG_TX_EVENT() do { \
     ledtimer_yellow = 1000;leds_on(LEDS_YELLOW); } while(0);

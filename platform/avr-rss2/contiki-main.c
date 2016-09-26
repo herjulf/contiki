@@ -124,7 +124,7 @@ rtimercycle(void)
 
 uint16_t node_id; /* Can be set by cooja */
 
-uint16_t ledtimer_red, ledtimer_yellow;
+uint16_t ledtimer_red, ledtimer_yellow, ledtimer_green, ledtimer_blue;
 uint16_t i2c_probed; /* i2c devices we have probed */
 
 
@@ -480,8 +480,20 @@ main(void)
         leds_off(LEDS_YELLOW);
       }
     }
+    if(ledtimer_green) {
+      if(--ledtimer_green == 0) {
+        leds_off(LEDS_GREEN);
+      }
+    }
+    if(ledtimer_blue) {
+      if(--ledtimer_blue == 0) {
+        leds_off(LEDS_BLUE);
+      }
+    }
     leds_off(LEDS_RED);
     leds_off(LEDS_YELLOW);
+    leds_off(LEDS_GREEN);
+    leds_off(LEDS_BLUE);
 
 #if 0
 /* Various entry points for debugging in the AVR Studio simulator.
