@@ -253,7 +253,7 @@ static int rf230_send(const void *data, unsigned short len);
 static int rf230_receiving_packet(void);
 static int rf230_pending_packet(void);
 static int rf230_cca(void);
-static rtimer_clock_t get_packet_timestamp(void);
+static rtimer_clock_t get_rx_packet_timestamp(void);
 
 /* SFD timestamp in RTIMER ticks */
 static volatile uint32_t last_packet_timestamp = 0;
@@ -305,7 +305,7 @@ uint32_t get_symbol_counter(void)
 
 /*---------------------------------------------------------------------------*/
 static rtimer_clock_t
-get_packet_timestamp(void)
+get_rx_packet_timestamp(void)
 {
   /* Save SFD timestamp, converted from radio timer to RTIMER */
   last_packet_timestamp = RTIMER_NOW() - RADIO_TO_RTIMER(get_symbol_counter() - get_SFD_timestamp() - 1);
@@ -1568,7 +1568,9 @@ if (RF230_receive_on) {
   interrupt_time_set = 1;
 #endif /* RF230_CONF_TIMESTAMPS */
 
-  get_packet_timestamp();
+  if( rf230_receiving_packet() ) {
+    get_rx_packet_timestamp();
+  }
 
   if(poll_mode) {
     rf230_pending = 1;
