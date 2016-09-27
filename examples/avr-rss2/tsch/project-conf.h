@@ -60,6 +60,8 @@
 
 #define TSCH_LOG_CONF_LEVEL 3
 
+#define TSCH_CONF_DEFAULT_TIMESLOT_LENGTH  10000
+
 /* For test avoid 26 */
 #define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 15, 25, 11, 20 }
 

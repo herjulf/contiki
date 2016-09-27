@@ -312,6 +312,7 @@ get_packet_timestamp(void)
   /* The remaining measured error is typically in range 0..16 usec.
    * Center it around zero, in the -8..+8 usec range. */
   last_packet_timestamp -= US_TO_RTIMERTICKS(8);
+  last_packet_timestamp = RTIMER_NOW();
   return last_packet_timestamp;
 }
 
@@ -328,11 +329,9 @@ set_poll_mode(uint8_t enable)
   poll_mode = enable;
   if(poll_mode) {
     radio_set_trx_state(RX_ON);
-    //hal_register_write(RG_IRQ_MASK, 0x0);
-    /* Disable interrupts */
   } else {
     /* Initialize and enable interrupts */
-    hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
+    radio_set_trx_state(RX_AACK_ON);
     /* TODO: enable E_MMAC_INT_RX_HEADER & filter out frames after header rx */
   }
 }
@@ -474,7 +473,7 @@ get_object(radio_param_t param, void *dest, size_t size)
     if(size != sizeof(rtimer_clock_t) || !dest) {
       return RADIO_RESULT_INVALID_VALUE;
     }
-    *(rtimer_clock_t *)dest = get_packet_timestamp();
+    *(rtimer_clock_t *)dest = last_packet_timestamp;
 
     return RADIO_RESULT_OK;
   }
@@ -1166,6 +1165,9 @@ rf230_transmit(unsigned short payload_len)
   struct timestamp timestamp;
 #endif /* RF230_CONF_TIMESTAMPS */
 
+	ledtimer_green = 1000;leds_on(LEDS_GREEN);
+
+
   /* If radio is sleeping we have to turn it on first */
   /* This automatically does the PLL calibrations */
   if (hal_get_slptr()) {
@@ -1422,6 +1424,7 @@ rf230_send(const void *payload, unsigned short payload_len)
 {
 	int ret = 0;
 
+
 #ifdef RF230BB_HOOK_IS_SEND_ENABLED
 	if(!RF230BB_HOOK_IS_SEND_ENABLED()) {
 		goto bail;
@@ -1565,6 +1568,13 @@ if (RF230_receive_on) {
   interrupt_time_set = 1;
 #endif /* RF230_CONF_TIMESTAMPS */
 
+  get_packet_timestamp();
+
+  if(poll_mode) {
+    rf230_pending = 1;
+    return 1;
+  }
+
   process_poll(&rf230_process);
   
   rf230_pending = 1;
@@ -1681,6 +1691,9 @@ rf230_read(void *buf, unsigned short bufsize)
 #if RF230_CONF_TIMESTAMPS_NOTNOW
   struct timestamp t;
 #endif
+
+  ledtimer_blue = 1000;leds_on(LEDS_BLUE);
+
 #if RF230_INSERTACK
 /* Return an ACK to the mac layer */
   if(ack_pending && bufsize == 3){	
