@@ -617,7 +617,7 @@ hal_sram_write(uint8_t address, uint8_t length, uint8_t *data)
 void RADIO_VECT(void);
 #else  /* !DOXYGEN */
 /* These link to the RF230BB driver in rf230.c */
-void rf230_interrupt(void);
+void rf230_interrupt(uint8_t s);
 
 extern hal_rx_frame_t rxframe[RF230_CONF_RX_BUFFERS];
 extern uint8_t rxframe_head,rxframe_tail;
@@ -657,7 +657,7 @@ ISR(TRX24_RX_END_vect)
 //		DEBUGFLOW('2');
 		hal_frame_read(&rxframe[rxframe_tail]);
 		rxframe_tail++;if (rxframe_tail >= RF230_CONF_RX_BUFFERS) rxframe_tail=0;
-		rf230_interrupt();
+		rf230_interrupt(2);
 	}
 }
 /* Preamble detected, starting frame reception */
@@ -668,7 +668,7 @@ ISR(TRX24_RX_START_vect)
 #if !RF230_CONF_AUTOACK
     rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
 #endif
-
+    rf230_interrupt(1);
 }
 
 /* PLL has locked, either from a transition out of TRX_OFF or a channel change while on */
@@ -697,6 +697,7 @@ ISR(TRX24_TX_END_vect)
 {
 //	DEBUGFLOW('7');
   rf230_txendwait=0;
+  rf230_interrupt(2);
 }
 
 /* Frame address has matched ours */

@@ -78,7 +78,7 @@
 #define _TSCH_DEBUG_TX_EVENT() do { \
     ledtimer_yellow = 1000;leds_on(LEDS_YELLOW); } while(0);
 
-#define TSCH_DEBUG_SLOT_START() do { \
+#define __TSCH_DEBUG_SLOT_START() do { \
     ledtimer_red = 1000;leds_on(LEDS_RED); } while(0);
 
 #define TSCH_DEBUG_SLOT_END() do { \

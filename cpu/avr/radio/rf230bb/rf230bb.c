@@ -68,11 +68,6 @@
 #include "net/rime/rimestats.h"
 #include "net/netstack.h"
 
-
-/* TSCH */
-#define WITH_SEND_CCA 0
-#define RF230_CONF_AUTOACK 0
-
 /* Timestamps have not been tested */
 #if RF230_CONF_TIMESTAMPS
 #include "net/rime/timesynch.h"
@@ -239,7 +234,7 @@ typedef enum{
 PROCESS(rf230_process, "RF230 driver");
 /*---------------------------------------------------------------------------*/
 
-int rf230_interrupt(void);
+int rf230_interrupt(uint8_t irq);
 
 static int rf230_on(void);
 static int rf230_off(void);
@@ -329,10 +324,11 @@ set_poll_mode(uint8_t enable)
   poll_mode = enable;
   if(poll_mode) {
     radio_set_trx_state(RX_ON);
+    ////hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
+    hal_register_write(RG_IRQ_MASK, 0xFF);
   } else {
     /* Initialize and enable interrupts */
     radio_set_trx_state(RX_AACK_ON);
-    /* TODO: enable E_MMAC_INT_RX_HEADER & filter out frames after header rx */
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -781,7 +777,7 @@ flushrx(void)
   }
   /* If another packet has been buffered, schedule another receive poll */
   if (rxframe[rxframe_head].length) {
-    rf230_interrupt();
+    rf230_interrupt(0);
   }
   else {
     rf230_pending = 0;
@@ -1079,7 +1075,8 @@ void rf230_warm_reset(void) {
   DDRB  &= ~(1<<7);
 #endif
   
-  hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
+  //hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
+  hal_register_write(RG_IRQ_MASK, 0xFF);
 
 #if 0
   /* Set up number of automatic retries 0-15
@@ -1164,9 +1161,6 @@ rf230_transmit(unsigned short payload_len)
 #if RF230_CONF_TIMESTAMPS_NOTNOW
   struct timestamp timestamp;
 #endif /* RF230_CONF_TIMESTAMPS */
-
-	ledtimer_green = 1000;leds_on(LEDS_GREEN);
-
 
   /* If radio is sleeping we have to turn it on first */
   /* This automatically does the PLL calibrations */
@@ -1556,11 +1550,25 @@ static volatile rtimer_clock_t interrupt_time;
 static volatile int interrupt_time_set;
 #endif /* RF230_CONF_TIMESTAMPS */
 int
-rf230_interrupt(void)
+rf230_interrupt(uint8_t irq)
 {
+
   /* Poll the receive process, unless the stack thinks the radio is off */
+
+  if(irq == 1) {
+    //rf230_receiving = 1;
+    ledtimer_red = 1000;leds_on(LEDS_RED);
+    get_rx_packet_timestamp();
+  }
+  else
+    rf230_pending = 0;
+
+  if(irq == 2) {
+    rf230_pending = 1;
+  }
+
 #if RADIOALWAYSON
-if (RF230_receive_on) {
+if (1 || RF230_receive_on) {
   DEBUGFLOW('+');
 #endif
 #if RF230_CONF_TIMESTAMPS_NOTNOW
@@ -1568,12 +1576,7 @@ if (RF230_receive_on) {
   interrupt_time_set = 1;
 #endif /* RF230_CONF_TIMESTAMPS */
 
-  if( rf230_receiving_packet() ) {
-    get_rx_packet_timestamp();
-  }
-
   if(poll_mode) {
-    rf230_pending = 1;
     return 1;
   }
 
@@ -1693,8 +1696,6 @@ rf230_read(void *buf, unsigned short bufsize)
 #if RF230_CONF_TIMESTAMPS_NOTNOW
   struct timestamp t;
 #endif
-
-  ledtimer_blue = 1000;leds_on(LEDS_BLUE);
 
 #if RF230_INSERTACK
 /* Return an ACK to the mac layer */

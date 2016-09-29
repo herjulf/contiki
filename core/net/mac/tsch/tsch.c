@@ -56,6 +56,8 @@
 #include "net/mac/tsch/tsch-security.h"
 #include "net/mac/mac-sequence.h"
 #include "lib/random.h"
+#include "dev/leds.h"
+
 
 #if FRAME802154_VERSION < FRAME802154_IEEE802154E_2012
 #error TSCH: FRAME802154_VERSION must be at least FRAME802154_IEEE802154E_2012
@@ -356,6 +358,7 @@ tsch_rx_process_pending()
     ringbufindex_get(&input_ringbuf);
 
     if(is_data) {
+      //ledtimer_green = 1000;leds_on(LEDS_GREEN);
       /* Pass to upper layers */
       packet_input();
     } else if(is_eb) {
@@ -882,6 +885,10 @@ send_packet(mac_callback_t sent, void *ptr)
     }
     packetbuf_set_attr(PACKETBUF_ATTR_MAC_SEQNO, tsch_packet_seqno);
     packetbuf_set_attr(PACKETBUF_ATTR_MAC_ACK, 1);
+
+    ledtimer_blue = 1000;leds_on(LEDS_BLUE);
+
+
   } else {
     /* Broadcast packets shall be added to broadcast queue
      * The broadcast address in Contiki is linkaddr_null which is equal
@@ -937,6 +944,8 @@ packet_input(void)
   int frame_parsed = 1;
 
   frame_parsed = NETSTACK_FRAMER.parse();
+  ledtimer_green = 1000;leds_on(LEDS_GREEN);
+
 
   if(frame_parsed < 0) {
     PRINTF("TSCH:! failed to parse %u\n", packetbuf_datalen());

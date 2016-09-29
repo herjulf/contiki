@@ -104,7 +104,28 @@
 #define SR_TX_PWR             0x145, 0x0f, 0
 #define RG_VERSION_NUM        VERSION_NUM
 #define RG_MAN_ID_0           MAN_ID_0
-#define RG_IRQ_MASK           IRQ_MASK
+#define RG_IRQ_MASK           (0x14e)
+/** Access parameters for sub-register IRQ_MASK in register @ref RG_IRQ_MASK */
+#define SR_IRQ_MASK                  0x14e, 0xff, 0
+/** Offset for register IRQ_STATUS */
+#define RG_IRQ_STATUS              (0x14f)
+#define SR_IRQ_STATUS               0x14f, 0xff, 0
+/** Awake Interrupt Status */
+#define SR_IRQ_AWAKE                0x14f, 0x80, 7
+/** TX_END Interrupt Status */
+#define SR_IRQ_TX_END               0x14f, 0x40, 6
+/** Address Match */
+#define SR_IRQ_AMI                  0x14f, 0x20, 5
+/** End of ED Measurement Interrupt Status */
+#define SR_CCA_ED_DONE              0x14f, 0x10, 4
+/** Access parameters for sub-register IRQ_3_TRX_END in register @ref RG_IRQ_STATUS */
+#define SR_IRQ_3_TRX_END             0x14f, 0x08, 3
+/** Access parameters for sub-register IRQ_2_RX_START in register @ref RG_IRQ_STATUS */
+#define SR_IRQ_2_RX_START            0x14f, 0x04, 2
+/** Access parameters for sub-register IRQ_1_PLL_UNLOCK in register @ref RG_IRQ_STATUS */
+#define SR_IRQ_1_PLL_UNLOCK          0x14f, 0x02, 1
+/** Access parameters for sub-register IRQ_0_PLL_LOCK in register @ref RG_IRQ_STATUS */
+#define SR_IRQ_0_PLL_LOCK            0x14f, 0x01, 0
 #define SR_MAX_FRAME_RETRIES  0x16C, 0xf0, 4
 #define SR_TX_AUTO_CRC_ON     0x144, 0x20, 5
 #define SR_PLL_FLT            0x144, 0x10, 4
@@ -273,27 +294,6 @@
 ///** Access parameters for sub-register CCA_ED_THRES in register @ref RG_CCA_THRES */
 //#define SR_CCA_ED_THRES              0x09, 0x0f, 0
 ///** Offset for register IRQ_MASK */
-//#define RG_IRQ_MASK                      (0x0e)
-///** Access parameters for sub-register IRQ_MASK in register @ref RG_IRQ_MASK */
-//#define SR_IRQ_MASK                  0x0e, 0xff, 0
-///** Offset for register IRQ_STATUS */
-//#define RG_IRQ_STATUS                    (0x0f)
-///** Access parameters for sub-register IRQ_7_BAT_LOW in register @ref RG_IRQ_STATUS */
-//#define SR_IRQ_7_BAT_LOW             0x0f, 0x80, 7
-///** Access parameters for sub-register IRQ_6_TRX_UR in register @ref RG_IRQ_STATUS */
-//#define SR_IRQ_6_TRX_UR              0x0f, 0x40, 6
-///** Access parameters for sub-register IRQ_5 in register @ref RG_IRQ_STATUS */
-//#define SR_IRQ_5                     0x0f, 0x20, 5
-///** Access parameters for sub-register IRQ_4 in register @ref RG_IRQ_STATUS */
-//#define SR_IRQ_4                     0x0f, 0x10, 4
-///** Access parameters for sub-register IRQ_3_TRX_END in register @ref RG_IRQ_STATUS */
-//#define SR_IRQ_3_TRX_END             0x0f, 0x08, 3
-///** Access parameters for sub-register IRQ_2_RX_START in register @ref RG_IRQ_STATUS */
-//#define SR_IRQ_2_RX_START            0x0f, 0x04, 2
-///** Access parameters for sub-register IRQ_1_PLL_UNLOCK in register @ref RG_IRQ_STATUS */
-//#define SR_IRQ_1_PLL_UNLOCK          0x0f, 0x02, 1
-///** Access parameters for sub-register IRQ_0_PLL_LOCK in register @ref RG_IRQ_STATUS */
-//#define SR_IRQ_0_PLL_LOCK            0x0f, 0x01, 0
 ///** Offset for register VREG_CTRL */
 //#define RG_VREG_CTRL                     (0x10)
 ///** Access parameters for sub-register AVREG_EXT in register @ref RG_VREG_CTRL */
