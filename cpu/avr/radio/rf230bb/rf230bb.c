@@ -775,6 +775,12 @@ flushrx(void)
   if (rxframe_head >= RF230_CONF_RX_BUFFERS) {
     rxframe_head=0;
   }
+  if(poll_mode) {
+    ledtimer_blue = 1000;leds_on(LEDS_BLUE);
+    rf230_pending = 0;
+    return;
+  }
+
   /* If another packet has been buffered, schedule another receive poll */
   if (rxframe[rxframe_head].length) {
     rf230_interrupt(0);
@@ -1557,14 +1563,14 @@ rf230_interrupt(uint8_t irq)
 
   if(irq == 1) {
     //rf230_receiving = 1;
-    ledtimer_red = 1000;leds_on(LEDS_RED);
+    ledtimer_green = 1000;leds_on(LEDS_GREEN);
     get_rx_packet_timestamp();
+    if(poll_mode) 
+      rf230_pending = 1;
   }
-  else
-    rf230_pending = 0;
 
   if(irq == 2) {
-    rf230_pending = 1;
+    ledtimer_red = 1000;leds_on(LEDS_RED);
   }
 
 #if RADIOALWAYSON

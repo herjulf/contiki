@@ -886,7 +886,7 @@ send_packet(mac_callback_t sent, void *ptr)
     packetbuf_set_attr(PACKETBUF_ATTR_MAC_SEQNO, tsch_packet_seqno);
     packetbuf_set_attr(PACKETBUF_ATTR_MAC_ACK, 1);
 
-    ledtimer_blue = 1000;leds_on(LEDS_BLUE);
+    //ledtimer_blue = 1000;leds_on(LEDS_BLUE);
 
 
   } else {
@@ -944,7 +944,7 @@ packet_input(void)
   int frame_parsed = 1;
 
   frame_parsed = NETSTACK_FRAMER.parse();
-  ledtimer_green = 1000;leds_on(LEDS_GREEN);
+  //ledtimer_green = 1000;leds_on(LEDS_GREEN);
 
 
   if(frame_parsed < 0) {
