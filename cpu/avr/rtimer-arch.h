@@ -51,14 +51,14 @@
  */
 #ifndef RTIMER_ARCH_PRESCALER
 //#define RTIMER_ARCH_PRESCALER 1024UL
-#define RTIMER_ARCH_PRESCALER 64UL
+//#define RTIMER_ARCH_PRESCALER 64UL
+#define RTIMER_ARCH_PRESCALER 256UL
 #endif
 #if RTIMER_ARCH_PRESCALER
 #define RTIMER_ARCH_SECOND (F_CPU/RTIMER_ARCH_PRESCALER)
 #else
 #define RTIMER_ARCH_SECOND 0
 #endif
-
 
 /* Do the math in 32bits to save precision.
  * Round to nearest integer rather than truncate. */

@@ -775,18 +775,17 @@ flushrx(void)
   if (rxframe_head >= RF230_CONF_RX_BUFFERS) {
     rxframe_head=0;
   }
-  if(poll_mode) {
-    ledtimer_blue = 1000;leds_on(LEDS_BLUE);
-    rf230_pending = 0;
-    return;
-  }
-
   /* If another packet has been buffered, schedule another receive poll */
   if (rxframe[rxframe_head].length) {
     rf230_interrupt(0);
   }
   else {
     rf230_pending = 0;
+  }
+  if(poll_mode) {
+    ledtimer_blue = 1000;leds_on(LEDS_BLUE);
+    rf230_pending = 0;
+    return;
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -1320,6 +1319,8 @@ rf230_transmit(unsigned short payload_len)
   }
 
   if (tx_result==RADIO_TX_OK) {
+    ledtimer_red = 1000;leds_on(LEDS_RED);
+
     RIMESTATS_ADD(lltx);
 #if NETSTACK_CONF_WITH_RIME
     if(packetbuf_attr(PACKETBUF_ATTR_RELIABLE))
@@ -1559,18 +1560,28 @@ int
 rf230_interrupt(uint8_t irq)
 {
 
-  /* Poll the receive process, unless the stack thinks the radio is off */
+#define IRQ_AWAKE          0x80
+#define IRQ_TX_END         0x40
+#define IRQ_AMI            0x20
+#define CCA_ED_DONE        0x10
+#define IRQ_3_TRX_END      0x08
+#define IRQ_2_RX_START     0x04
+#define IRQ_1_PLL_UNLOCK   0x02
+#define IRQ_0_PLL_LOCK     0x01
 
-  if(irq == 1) {
+  
+  irq = hal_register_read(RG_IRQ_STATUS);
+  
+  if(irq & IRQ_2_RX_START) {
     //rf230_receiving = 1;
     ledtimer_green = 1000;leds_on(LEDS_GREEN);
     get_rx_packet_timestamp();
-    if(poll_mode) 
-      rf230_pending = 1;
   }
 
-  if(irq == 2) {
-    ledtimer_red = 1000;leds_on(LEDS_RED);
+  if(irq & IRQ_3_TRX_END) {
+    if(poll_mode) {
+      rf230_pending = 1;
+    }
   }
 
 #if RADIOALWAYSON

@@ -26,8 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * This file is part of the Contiki operating system.
- */
+ * This file is part of the Contiki operating system */
 
 /**
  * \file
@@ -60,14 +59,16 @@
 
 #define TSCH_LOG_CONF_LEVEL 3
 
-#define TSCH_CONF_DEFAULT_TIMESLOT_LENGTH  15000
+#define TSCH_CONF_DEFAULT_TIMESLOT_LENGTH  10000
 
 /* For test avoid 26 */
-#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 15, 25, 11, 20 }
+//#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 15, 25, 11, 20 }
+#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 12 }
+#define TSCH_SCHEDULE_CONF_DEFAULT_LENGTH 1
 
 /* TSCH */
 #define WITH_SEND_CCA 0
 #define RF230_CONF_AUTOACK 0
-
-
+#define RF230_CONF_AUTORETRIES 0
+#define TSCH_CONF_HW_FRAME_FILTERING 0
 #endif /* PROJECT_CONF_H_ */
