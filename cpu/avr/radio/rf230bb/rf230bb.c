@@ -269,17 +269,35 @@ foo(int a)
   hal_register_write(RG_CSMA_SEED_0,hal_register_read(RG_PHY_RSSI) );//upper two RSSI reg bits RND_VALUE are random 
 }
 
+static uint32_t macsc_read32(volatile uint8_t *hh)
+{
+  union {
+    uint8_t a[4];
+    uint32_t rv;
+  } x;
+  
+  x.a[0] = *(hh-3); x.a[1] = *(hh-2);
+  x.a[2] = *(hh-1); x.a[3] = *(hh);
+  return x.rv;
+}
+
+static void macsc_write32(volatile uint8_t *hh, uint32_t val)
+{
+  union { 
+    uint8_t a[4]; 
+    uint32_t v; 
+  } x;
+  x.v = val; 
+  *hh = x.a[3]; // hh
+  *(hh-1)  = x.a[2];	
+  *(hh-2)  = x.a[1]; 
+  *(hh-3)  = x.a[0]; 
+}
+
 static
 uint32_t get_SFD_timestamp(void) 
 {
-  uint8_t hh, hl, lh, ll;
-  uint32_t t;
-  ll = hal_register_read(RG_SCTSRLL);
-  lh = hal_register_read(RG_SCTSRLH);
-  hl = hal_register_read(RG_SCTSRHL);
-  hh = hal_register_read(RG_SCTSRHH);
-  t = (((uint32_t) hh)<<24) | (((uint32_t) hl)<<16) | (((uint32_t) lh)<<8) | (((uint32_t) ll));
-  return t;
+  return macsc_read32( (volatile uint8_t *) RG_SCCNTHH); 
 }
 
 static
@@ -306,7 +324,7 @@ get_rx_packet_timestamp(void)
   last_packet_timestamp = RTIMER_NOW() - RADIO_TO_RTIMER(get_symbol_counter() - get_SFD_timestamp() - 1);
   /* The remaining measured error is typically in range 0..16 usec.
    * Center it around zero, in the -8..+8 usec range. */
-  last_packet_timestamp -= US_TO_RTIMERTICKS(8);
+  //last_packet_timestamp -= US_TO_RTIMERTICKS(8);
   last_packet_timestamp = RTIMER_NOW();
   return last_packet_timestamp;
 }
@@ -1008,6 +1026,31 @@ calibrate_rc_osc_32k(void)
 }
 #endif
 /*---------------------------------------------------------------------------*/
+
+static void
+rf230_init_mac_symbol_counter(void)
+{
+  uint8_t i;
+
+  /* Counter REG */
+  i = 0x80 | 0x20; // Sync Enable 
+  hal_subregister_write(SR_SCCR0, i);
+
+  /* Clear IRQ status */
+  hal_subregister_write(SR_SCIRQS, 0xFF);  
+
+  /* Enable IRQ  */
+  i = 0x10 | 0x08; // Backoff + Counter overflow
+  hal_register_write(RG_SCIRQM, i);
+  // hal_subregister_write(SR_SCIRQM_IRQMOF, 1);
+
+  macsc_write32( (volatile uint8_t *) RG_SCOCR1HH, 160); 
+  hal_subregister_write(SR_SCCR1_SCENBO, 1);
+
+
+  //hal_subregister_write(SR_SCCR0_SCEN, 1);
+}
+
 int
 rf230_init(void)
 {
@@ -1061,6 +1104,7 @@ rf230_init(void)
   PRINTF("rf230: Version %u, ID %u\n",tvers,tmanu);
   
   rf230_warm_reset();
+  rf230_init_mac_symbol_counter();
  
  /* Start the packet receive process */
   process_start(&rf230_process, NULL);
@@ -1548,6 +1592,74 @@ rf230_set_pan_addr(unsigned pan,
     PRINTF("\n");
   }
 }
+
+ISR(TRX24_RX_START_vect)
+{
+/* Save RSSI for this packet if not in extended mode, scaling to 1dB resolution */
+#if !RF230_CONF_AUTOACK
+    rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
+#endif
+    ledtimer_green = 1000;leds_on(LEDS_GREEN);
+    get_rx_packet_timestamp();
+    rf230_interrupt(2);
+}
+
+/* Received packet interrupt */
+ISR(TRX24_RX_END_vect)
+{
+/* Get the rssi from ED if extended mode */
+#if RF230_CONF_AUTOACK
+	rf230_last_rssi=hal_register_read(RG_PHY_ED_LEVEL);
+#endif
+
+/* Buffer the frame and call rf230_interrupt to schedule poll for rf230 receive process */
+/* Is a ram buffer available? */
+	if (rxframe[rxframe_tail].length) {DEBUGFLOW('0');} else /*DEBUGFLOW('1')*/;
+
+#ifdef RF230_MIN_RX_POWER		 
+/* Discard packets weaker than the minimum if defined. This is for testing miniature meshes */
+/* This does not prevent an autoack. TODO:rfa1 radio can be set up to not autoack weak packets */
+	if (rf230_last_rssi >= RF230_MIN_RX_POWER) {
+#else
+	if (1) {
+#endif
+//		DEBUGFLOW('2');
+		hal_frame_read(&rxframe[rxframe_tail]);
+		rxframe_tail++;if (rxframe_tail >= RF230_CONF_RX_BUFFERS) rxframe_tail=0;
+		rf230_interrupt(2);
+
+		if(poll_mode) {
+		  rf230_pending = 1;
+		}
+	}
+}
+
+/* PLL has locked, either from a transition out of TRX_OFF or a channel change while on */
+ISR(TRX24_PLL_LOCK_vect)
+{
+}
+
+ISR(SCNT_OVFL_vect)
+{
+}
+
+ISR(SCNT_CMP1_vect)
+{
+  TSCH_CLOCK();
+}
+
+ISR(SCNT_CMP2_vect)
+{
+}
+
+ISR(SCNT_CMP3_vect)
+{
+}
+
+ISR(SCNT_BACKOFF_vect)
+{
+}
+
 /*---------------------------------------------------------------------------*/
 /*
  * Interrupt leaves frame intact in FIFO.
@@ -1563,26 +1675,11 @@ rf230_interrupt(uint8_t irq)
 #define IRQ_AWAKE          0x80
 #define IRQ_TX_END         0x40
 #define IRQ_AMI            0x20
-#define CCA_ED_DONE        0x10
+#define IRQ_CCA_ED_DONE    0x10
 #define IRQ_3_TRX_END      0x08
 #define IRQ_2_RX_START     0x04
 #define IRQ_1_PLL_UNLOCK   0x02
 #define IRQ_0_PLL_LOCK     0x01
-
-  
-  irq = hal_register_read(RG_IRQ_STATUS);
-  
-  if(irq & IRQ_2_RX_START) {
-    //rf230_receiving = 1;
-    ledtimer_green = 1000;leds_on(LEDS_GREEN);
-    get_rx_packet_timestamp();
-  }
-
-  if(irq & IRQ_3_TRX_END) {
-    if(poll_mode) {
-      rf230_pending = 1;
-    }
-  }
 
 #if RADIOALWAYSON
 if (1 || RF230_receive_on) {
@@ -1592,6 +1689,9 @@ if (1 || RF230_receive_on) {
   interrupt_time = timesynch_time();
   interrupt_time_set = 1;
 #endif /* RF230_CONF_TIMESTAMPS */
+
+  irq = hal_register_read(RG_SCIRQS);
+  //hal_register_write(RG_SCOCR1LL, 160);
 
   if(poll_mode) {
     return 1;

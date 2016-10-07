@@ -42,11 +42,69 @@
  * is used with explicit _SFR_MEM8 in the subregister read/write routines.
  */
 
-/* Transmit Frame Timestamp */
-#define RG_SCTSTRHH (0xFC)  //SCTSTRHH7-0
-#define RG_SCTSTRHL (0xFB)  //SCTSTRHL7-0
-#define RG_SCTSTRLH (0xFA)  //SCTSTRLH7-0
-#define RG_SCTSTRLL (0xF9)  //SCTSTRLL7-0
+
+/* Symbol Counter */
+#define RG_SCCNTHH  (0xE4)   //SCCNTHH7-0
+#define RG_SCCNTHL  (0xE3)   //SCCNTHL7-0
+#define RG_SCCNTLH  (0xE2)   //SCCNTLH7-0
+#define RG_SCCNTLL  (0xE1)   //SCCNTLL7-0
+
+/* Counter control register 0 */
+#define RG_SCCR0   (0xdc)   
+#define SR_SCCR0            0xdc,  0xff, 0
+#define SR_SCCR0_SCRES      0xdc,  0x80, 7 // Counter Sync.
+#define SR_SCCR0_SCMBTS     0xdc,  0x40, 6 // Manual Beacon timestamp
+#define SR_SCCR0_SCEN       0xdc,  0x20, 5 // Counter enable
+#define SR_SCCR0_SCCKSEL    0xdc,  0x10, 4 // Counter clock source
+#define SR_SCCR0_SCTSE      0xdc,  0x08, 3 // Auto timstamp Beacon, SFD
+#define SR_SCCR0_SCMP3      0xdc,  0x04, 2 // Compare 3 counter mode sel.
+#define SR_SCCR0_SCMP2      0xdc,  0x02, 1 // Compare 2 counter mode sel.
+#define SR_SCCR0_SCMP1      0xdc,  0x01, 0 // Compare 1 counter mode sel.
+
+/* Counter control register 1 */
+#define RG_SCCR1   (0xdd)   
+#define SR_SCCR1            0xdd,  0xff, 0
+#define SR_SCCR1_SCBTSM     0xdd,  0x20, 5 // Disable beacon timestamp
+#define SR_SCCR1_CLK0       0xdd,  0x10, 4 // CLK0
+#define SR_SCCR1_CLK1       0xdd,  0x08, 3 // CLK1
+#define SR_SCCR1_CLK3       0xdd,  0x04, 2 // CLK2
+#define SR_SCCR1_EECLK      0xdd,  0x02, 1 // CLK2
+#define SR_SCCR1_SCENBO     0xdd,  0x01, 0 // Backoff Slot Counter Enable
+
+/* Counter status register 1 */
+#define RG_SCSR      (0xde)   
+#define SR_SCSR             0xde,  0xff, 0
+#define SR_SCBSY            0xde,  0x01, 0 // Symbol conter busy
+
+/* Counter ISR  */
+#define RG_SCIRQS   (0xe0)   
+#define SR_SCIRQS            0xe0,  0xff, 0
+#define SR_SCIRQS_IRQSB0     0xe0,  0x10, 4 // Backoff
+#define SR_SCIRQS_IRQSOF     0xe0,  0x08, 3 // Counter overflow
+#define SR_SCIRQS_IRQSCP3    0xe0,  0x04, 2 // Compare 3 counter 
+#define SR_SCIRQS_IRQSCP2    0xe0,  0x02, 1 // Compare 2 counter 
+#define SR_SCIRQS_IRQSCP1    0xe0,  0x01, 0 // Compare 1 counter 
+
+/* Counter IRQ mask  */
+#define RG_SCIRQM   (0xdf)   
+#define SR_SCIRQM            0xdf,  0xff, 0
+#define SR_SCIRQM_IRQMB0     0xdf,  0x10, 4 // Backoff mask
+#define SR_SCIRQM_IRQMOF     0xdf,  0x08, 3 // Counter overflow mask
+#define SR_SCIRQM_IRQMCP3    0xdf,  0x04, 2 // Compare 3 counter mask
+#define SR_SCIRQM_IRQMCP2    0xdf,  0x02, 1 // Compare 2 counter mask
+#define SR_SCIRQM_IRQMCP1    0xdf,  0x01, 0 // Compare 1 counter mask
+
+/* Timestamp SFD */
+#define RG_SCTSRHH  0xFC   //SCTSRHH7-0
+#define RG_SCTSRHL  0xFB   //SCTSRHL7-0
+#define RG_SCTSRLH  0xFA   //SCTSRLH7-0
+#define RG_SCTSRLL  0xF9   //SCTSRLL7-0
+
+/* Beacon Timestamp */
+#define RG_SCBTSRHH (0xE8)  //SCBTSRHH7-0
+#define RG_SCBTSRHL (0xE7)  //SCBTSRHL7-0
+#define RG_SCBTSRLH (0xE6)  //SCBTSRLH7-0
+#define RG_SCBTSRLL (0xE5)  //SCBTSRLL7-0
 
 /* Output Compare 1 */
 #define RG_SCOCR1HH (0xF8)  //SCOCR1HH7-0  
@@ -66,36 +124,24 @@
 #define RG_SCOCR3LH (0xEE)  //SCOCR3LH7-0
 #define RG_SCOCR3LL (0xED)  //SCOCR3LL7-0
 
-/* Timestamp SFD */
-#define RG_SCTSRHH (0xEC)   //SCTSRHH7-0
-#define RG_SCTSRHL (0xEB)   //SCTSRHL7-0
-#define RG_SCTSRLH (0xEA)   //SCTSRLH7-0
-#define RG_SCTSRLL (0xE9)   //SCTSRLL7-0
-
-/* Beacon Timestamp */
-#define RG_SCBTSRHH (0xE8)  //SCBTSRHH7-0
-#define RG_SCBTSRHL (0xE7)  //SCBTSRHL7-0
-#define RG_SCBTSRLH (0xE6)  //SCBTSRLH7-0
-#define RG_SCBTSRLL (0xE5)  //SCBTSRLL7-0
-
-/* Counter */
-#define RG_SCCNTHH (0xE4)   //SCCNTHH7-0
-#define RG_SCCNTHL (0xE3)   //SCCNTHL7-0
-#define RG_SCCNTLH (0xE2)   //SCCNTLH7-0
-#define RG_SCCNTLL (0xE1)   //SCCNTLL7-0
+/* Transmit Frame Timestamp */
+#define RG_SCTSTRHH (0xFC)  //SCTSTRHH7-0
+#define RG_SCTSTRHL (0xFB)  //SCTSTRHL7-0
+#define RG_SCTSTRLH (0xFA)  //SCTSTRLH7-0
+#define RG_SCTSTRLL (0xF9)  //SCTSTRLL7-0
 
 /* Interrupt Status */
-#define RG_SCIRQS (0xE0)  //Res2 Res1 Res0 IRQSBO IRQSOF IRQSCP3 IRQSCP2 IRQSCP1 page 173
+// #define RG_SCIRQS (0xE0)  //Res2 Res1 Res0 IRQSBO IRQSOF IRQSCP3 IRQSCP2 IRQSCP1 page 173
 /* Interrupt Mask */
-#define RG_SCIRQM (0xDF)  //Res2 Res1 Res0 IRQMBO IRQMOF IRQMCP3 IRQMCP2 IRQMCP1 page 174
+// #define RG_SCIRQM (0xDF)  //Res2 Res1 Res0 IRQMBO IRQMOF IRQMCP3 IRQMCP2 IRQMCP1 page 174
 /* Counter status */
-#define RG_SCSR   (0xDE)  //Res6 Res5 Res4 Res3 Res2 Res1 Res0 SCBSY 173
+// #define RG_SCSR   (0xDE)  //Res6 Res5 Res4 Res3 Res2 Res1 Res0 SCBSY 173
 /* Counter Control 1 */
-#define RG_SCCR1  (0xDD)  //Res6 Res5 SCBTSM SCCKDIV2 SCCKDIV1 SCCKDIV0 SCEECLK SCENBO 172
+// #define RG_SCCR1  (0xDD)  //Res6 Res5 SCBTSM SCCKDIV2 SCCKDIV1 SCCKDIV0 SCEECLK SCENBO 172
 /* Counter Control 0 */
-#define RG_SCCR0  (0xDC)  //SCRES SCMBTS SCEN SCCKSEL SCTSE SCCMP3 SCCMP2 SCCMP1 171
+// #define RG_SCCR0  (0xDC)  //SCRES SCMBTS SCEN SCCKSEL SCTSE SCCMP3 SCCMP2 SCCMP1 171
 /* Counter Compare Source */
-#define RG_SCCSR  (0xDB)  //Res1 Res0 SCCS31 SCCS30 SCCS21 SCCS20 SCCS11 SCCS10 161
+// #define RG_SCCSR  (0xDB)  //Res1 Res0 SCCS31 SCCS30 SCCS21 SCCS20 SCCS11 SCCS10 161
 
 #define RG_TRX_STATUS         TRX_STATUS
 #define SR_TRX_STATUS         0x141, 0x1f, 0

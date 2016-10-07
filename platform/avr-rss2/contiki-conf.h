@@ -67,7 +67,7 @@
 #define TSCH_DEBUG 1
 
 #if TSCH_DEBUG
-#define TSCH_DEBUG_INIT() do { } while(0);
+#define TSCH_DEBUG_INIT() do {DDRD |= (1<<PD6);} while(0);
 
 #define __TSCH_DEBUG_INTERRUPT() do { \
     ledtimer_green = 1000;leds_on(LEDS_GREEN); } while(0);
@@ -83,6 +83,9 @@
 
 #define TSCH_DEBUG_SLOT_END() do { \
     ledtimer_yellow = 1000;leds_on(LEDS_YELLOW); } while(0);
+
+#define TSCH_CLOCK() do{ PORTD ^= (1<<PD6); } while(0);
+
 
 #endif /* TSCH_DEBUG */
 
