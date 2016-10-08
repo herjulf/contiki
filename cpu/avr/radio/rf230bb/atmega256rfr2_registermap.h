@@ -65,16 +65,26 @@
 #define RG_SCCR1   (0xdd)   
 #define SR_SCCR1            0xdd,  0xff, 0
 #define SR_SCCR1_SCBTSM     0xdd,  0x20, 5 // Disable beacon timestamp
+#define SR_SCCR1_CLKDIV     0xdd,  0x1c, 2 // CLKDIV
 #define SR_SCCR1_CLK0       0xdd,  0x10, 4 // CLK0
 #define SR_SCCR1_CLK1       0xdd,  0x08, 3 // CLK1
-#define SR_SCCR1_CLK3       0xdd,  0x04, 2 // CLK2
-#define SR_SCCR1_EECLK      0xdd,  0x02, 1 // CLK2
+#define SR_SCCR1_CLK2       0xdd,  0x04, 2 // CLK2
+#define SR_SCCR1_EECLK      0xdd,  0x02, 1 // 
 #define SR_SCCR1_SCENBO     0xdd,  0x01, 0 // Backoff Slot Counter Enable
+
+/* Prescaler for symbol counter */
+#define SCCKDIV_62_5k 0
+#define SCCKDIV_125k  1
+#define SCCKDIV_250k  2
+#define SCCKDIV_500k  3
+#define SCCKDIV_1M    4
+#define SCCKDIV_2M    5
+#define SCCKDIV_4M    6
 
 /* Counter status register 1 */
 #define RG_SCSR      (0xde)   
 #define SR_SCSR             0xde,  0xff, 0
-#define SR_SCBSY            0xde,  0x01, 0 // Symbol conter busy
+#define SR_SCBSY            0xde,  0x01, 0 // Symbol counter busy
 
 /* Counter ISR  */
 #define RG_SCIRQS   (0xe0)   

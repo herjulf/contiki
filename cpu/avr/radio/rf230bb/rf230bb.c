@@ -332,6 +332,8 @@ uint32_t get_symbol_counter_1(void)
 
 uint32_t get_symbol_counter(void) 
 {
+  while( hal_subregister_read(SR_SCBSY)); 
+
   return macsc_read32( (volatile uint8_t *) RG_SCCNTHH, 
 		       (volatile uint8_t *) RG_SCCNTHL, 
 		       (volatile uint8_t *) RG_SCCNTLH, 
@@ -340,6 +342,8 @@ uint32_t get_symbol_counter(void)
 
 uint32_t get_ocr1_counter(void) 
 {
+  while( hal_subregister_read(SR_SCBSY)); 
+
   return macsc_read32( (volatile uint8_t *) RG_SCOCR1HH, 
 		       (volatile uint8_t *) RG_SCOCR1HL, 
 		       (volatile uint8_t *) RG_SCOCR1LH, 
@@ -1081,32 +1085,33 @@ calibrate_rc_osc_32k(void)
 static void
 rf230_init_mac_symbol_counter(void)
 {
-  uint8_t i;;
+  uint8_t i;
 
   /* Counter REG */
   i = 0;
   i |= 0x80; // Counter Sync.
   i |= 0x20; // Counter enable
-  i |= 0x08; // Auto timstamp Beacon, SFD
+  //i |= 0x08; // Auto timstamp Beacon, SFD
   i |= 0x01; // Compare 1 counter mode sel.
   hal_subregister_write(SR_SCCR0, i);
+
+  /* Prescaler */
+  hal_subregister_write(SR_SCCR1_CLKDIV, SCCKDIV_4M);
+
+  /* ocr1 */ 
+  macsc_write32( (volatile uint8_t *) RG_SCOCR1HH, 160); 
+  // hal_subregister_write(SR_SCCR1_SCENBO, 1);  // Enable Back off counter
+  //hal_subregister_write(SR_SCCR0_SCEN, 1);
 
   /* Clear IRQ status */
   hal_subregister_write(SR_SCIRQS, 0xFF);  
 
   /* Enable IRQ  */
   i = 0;
-  i |= 0x10; // Backoff mask
+  // i |= 0x10; // Backoff mask 640 us IRQ
   i |= 0x08; // Counter overflow mask
   i |= 0x01; // Compare 1 counter mask
   hal_register_write(RG_SCIRQM, i);
-
-  /* ocr1 */ 
-  macsc_write32( (volatile uint8_t *) RG_SCOCR1HH, 160); 
-  hal_subregister_write(SR_SCCR1_SCENBO, 1);  // Interrupt status clear
-  hal_subregister_write(SR_SCIRQM_IRQMOF, 1); // Interrupt OVV
-  hal_subregister_write(SR_SCIRQM_IRQMCP1, 1); // OCR1
-  //hal_subregister_write(SR_SCCR0_SCEN, 1);
 }
 
 int
@@ -1703,6 +1708,9 @@ ISR(SCNT_OVFL_vect)
 
 ISR(SCNT_CMP1_vect)
 {
+  uint32_t i =  get_symbol_counter();
+  i += 320 - 7;
+  macsc_write32( (volatile uint8_t *) RG_SCOCR1HH, i); 
   TSCH_CLOCK();
 }
 
@@ -1748,7 +1756,7 @@ if (1 || RF230_receive_on) {
   interrupt_time_set = 1;
 #endif /* RF230_CONF_TIMESTAMPS */
 
-  irq = hal_register_read(RG_SCIRQS);
+  //irq = hal_register_read(RG_SCIRQS);
   //hal_register_write(RG_SCOCR1LL, 160);
 
   if(poll_mode) {

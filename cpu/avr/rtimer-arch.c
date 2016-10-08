@@ -279,6 +279,12 @@ uint32_t longhowlong;
 /* Reset timer count, wait for the write (which assures TCCR2x and OCR2A are finished) */
     TCNT2 = 0; 
     while(ASSR & (1 << TCN2UB));
+#include "dev/radio.h"
+#include "rf230bb.h"
+
+ /* MAC symbol counter needs to finish */
+  while( hal_subregister_read(SR_SCBSY)); 
+
 
 /* Enable TIMER2 output compare interrupt, sleep mode and sleep */
     TIMSK2 |= (1 << OCIE2A);
