@@ -966,10 +966,18 @@ packet_input(void)
       }
     }
 
+    extern volatile uint32_t get_symbol_counter();
+    extern volatile uint32_t get_symbol_counter_1();
+    extern volatile uint32_t get_SFD_timestamp();
+    extern volatile uint32_t get_ocr1_counter();
     if(!duplicate) {
       PRINTF("TSCH: received from %u with seqno %u\n",
              TSCH_LOG_ID_FROM_LINKADDR(packetbuf_addr(PACKETBUF_ADDR_SENDER)),
              packetbuf_attr(PACKETBUF_ATTR_MAC_SEQNO));
+
+      printf("CNT/SFD  %-lu/%-lu ",  get_symbol_counter(),  get_symbol_counter_1());
+      printf("%lu ", get_SFD_timestamp());
+      printf("ocr1=%lu\n", get_ocr1_counter());
       NETSTACK_LLSEC.input();
     }
   }

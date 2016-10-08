@@ -251,7 +251,8 @@ static int rf230_cca(void);
 static rtimer_clock_t get_rx_packet_timestamp(void);
 
 /* SFD timestamp in RTIMER ticks */
-static volatile uint32_t last_packet_timestamp = 0;
+//static volatile uint32_t last_packet_timestamp = 0;
+volatile uint32_t last_packet_timestamp = 0;
 
 uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
 
@@ -269,15 +270,37 @@ foo(int a)
   hal_register_write(RG_CSMA_SEED_0,hal_register_read(RG_PHY_RSSI) );//upper two RSSI reg bits RND_VALUE are random 
 }
 
-static uint32_t macsc_read32(volatile uint8_t *hh)
+
+static inline uint32_t macsc_read32(volatile uint8_t *hh,
+		volatile uint8_t *hl,
+		volatile uint8_t *lh,
+		volatile uint8_t *ll)
+{
+	union {
+		uint8_t a[4];
+		uint32_t rv;
+	}
+	x;
+
+	x.a[0] = *ll;
+	x.a[1] = *lh;
+	x.a[2] = *hl;
+	x.a[3] = *hh;
+
+	return x.rv;
+}
+
+static uint32_t macsc_read32_1(volatile uint8_t *hh)
 {
   union {
     uint8_t a[4];
     uint32_t rv;
   } x;
   
-  x.a[0] = *(hh-3); x.a[1] = *(hh-2);
-  x.a[2] = *(hh-1); x.a[3] = *(hh);
+  x.a[0] = *(hh-3); 
+  x.a[1] = *(hh-2);
+  x.a[2] = *(hh-1); 
+  x.a[3] = *(hh);
   return x.rv;
 }
 
@@ -294,24 +317,51 @@ static void macsc_write32(volatile uint8_t *hh, uint32_t val)
   *(hh-3)  = x.a[0]; 
 }
 
-static
 uint32_t get_SFD_timestamp(void) 
 {
-  return macsc_read32( (volatile uint8_t *) RG_SCCNTHH); 
+  return macsc_read32( (volatile uint8_t *) RG_SCTSRHH, 
+		       (volatile uint8_t *) RG_SCTSRHL, 
+		       (volatile uint8_t *) RG_SCTSRLH, 
+		       (volatile uint8_t *) RG_SCTSRLL);
 }
 
-static
+uint32_t get_symbol_counter_1(void) 
+{
+  return macsc_read32_1( (volatile uint8_t *) RG_SCCNTHH);
+}
+
 uint32_t get_symbol_counter(void) 
 {
-  uint8_t hh, hl, lh, ll;
-  uint32_t t;
-  ll = hal_register_read(RG_SCCNTLL);
-  lh = hal_register_read(RG_SCCNTLH);
-  hl = hal_register_read(RG_SCCNTHL);
-  hh = hal_register_read(RG_SCCNTHH);
-  t = (((uint32_t) hh)<<24) | (((uint32_t) hl)<<16) | (((uint32_t) lh)<<8) | (((uint32_t) ll));
-  return t;
+  return macsc_read32( (volatile uint8_t *) RG_SCCNTHH, 
+		       (volatile uint8_t *) RG_SCCNTHL, 
+		       (volatile uint8_t *) RG_SCCNTLH, 
+		       (volatile uint8_t *) RG_SCCNTLL);
 }
+
+uint32_t get_ocr1_counter(void) 
+{
+  return macsc_read32( (volatile uint8_t *) RG_SCOCR1HH, 
+		       (volatile uint8_t *) RG_SCOCR1HL, 
+		       (volatile uint8_t *) RG_SCOCR1LH, 
+		       (volatile uint8_t *) RG_SCOCR1LL);
+}
+
+uint32_t get_ocr2_counter(void) 
+{
+  return macsc_read32( (volatile uint8_t *) RG_SCOCR2HH, 
+		       (volatile uint8_t *) RG_SCOCR2HL, 
+		       (volatile uint8_t *) RG_SCOCR2LH, 
+		       (volatile uint8_t *) RG_SCOCR2LL);
+}
+
+uint32_t get_ocr3_counter(void) 
+{
+  return macsc_read32( (volatile uint8_t *) RG_SCOCR3HH, 
+		       (volatile uint8_t *) RG_SCOCR3HL, 
+		       (volatile uint8_t *) RG_SCOCR3LH, 
+		       (volatile uint8_t *) RG_SCOCR3LL);
+}
+
 
 #define SYS_CTRL_16MHZ               16000000
 #define RADIO_TO_RTIMER(X) ((uint32_t)((uint64_t)(X) * RTIMER_ARCH_SECOND / SYS_CTRL_16MHZ))
@@ -321,7 +371,8 @@ static rtimer_clock_t
 get_rx_packet_timestamp(void)
 {
   /* Save SFD timestamp, converted from radio timer to RTIMER */
-  last_packet_timestamp = RTIMER_NOW() - RADIO_TO_RTIMER(get_symbol_counter() - get_SFD_timestamp() - 1);
+  //last_packet_timestamp = RTIMER_NOW() - RADIO_TO_RTIMER(get_symbol_counter() - get_SFD_timestamp() - 1);
+  //last_packet_timestamp = RTIMER_NOW() - US_TO_RTIMERTICKS((get_symbol_counter() - get_SFD_timestamp() - 1) * 16);
   /* The remaining measured error is typically in range 0..16 usec.
    * Center it around zero, in the -8..+8 usec range. */
   //last_packet_timestamp -= US_TO_RTIMERTICKS(8);
@@ -1030,24 +1081,31 @@ calibrate_rc_osc_32k(void)
 static void
 rf230_init_mac_symbol_counter(void)
 {
-  uint8_t i;
+  uint8_t i;;
 
   /* Counter REG */
-  i = 0x80 | 0x20; // Sync Enable 
+  i = 0;
+  i |= 0x80; // Counter Sync.
+  i |= 0x20; // Counter enable
+  i |= 0x08; // Auto timstamp Beacon, SFD
+  i |= 0x01; // Compare 1 counter mode sel.
   hal_subregister_write(SR_SCCR0, i);
 
   /* Clear IRQ status */
   hal_subregister_write(SR_SCIRQS, 0xFF);  
 
   /* Enable IRQ  */
-  i = 0x10 | 0x08; // Backoff + Counter overflow
+  i = 0;
+  i |= 0x10; // Backoff mask
+  i |= 0x08; // Counter overflow mask
+  i |= 0x01; // Compare 1 counter mask
   hal_register_write(RG_SCIRQM, i);
-  // hal_subregister_write(SR_SCIRQM_IRQMOF, 1);
 
+  /* ocr1 */ 
   macsc_write32( (volatile uint8_t *) RG_SCOCR1HH, 160); 
-  hal_subregister_write(SR_SCCR1_SCENBO, 1);
-
-
+  hal_subregister_write(SR_SCCR1_SCENBO, 1);  // Interrupt status clear
+  hal_subregister_write(SR_SCIRQM_IRQMOF, 1); // Interrupt OVV
+  hal_subregister_write(SR_SCIRQM_IRQMCP1, 1); // OCR1
   //hal_subregister_write(SR_SCCR0_SCEN, 1);
 }
 
