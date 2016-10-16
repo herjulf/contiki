@@ -304,7 +304,7 @@ static uint32_t macsc_read32_1(volatile uint8_t *hh)
   return x.rv;
 }
 
-static void macsc_write32(volatile uint8_t *hh, uint32_t val)
+void macsc_write32(volatile uint8_t *hh, uint32_t val)
 {
   union { 
     uint8_t a[4]; 
@@ -1087,28 +1087,40 @@ rf230_init_mac_symbol_counter(void)
 {
   uint8_t i;
 
+#include "rtimer-arch.h"
+  printf("RTIMER_ARCH_SECOND=%lu\n", RTIMER_ARCH_SECOND);
+  //  printf("US_TO_RTIMERTICKS=%lu\n",US_TO_RTIMERTICKS);
+  // printf("RTIMERTICKS_TO_US=%lu\n", RTIMERTICKS_TO_US);
+
+#define BACKOFF 0
+
   /* Counter REG */
   i = 0;
   i |= 0x80; // Counter Sync.
   i |= 0x20; // Counter enable
+  //i |= 0x10; // RTC clock
   //i |= 0x08; // Auto timstamp Beacon, SFD
   i |= 0x01; // Compare 1 counter mode sel.
   hal_subregister_write(SR_SCCR0, i);
 
   /* Prescaler */
-  hal_subregister_write(SR_SCCR1_CLKDIV, SCCKDIV_4M);
+  //hal_subregister_write(SR_SCCR1_CLKDIV, SCCKDIV_4M);
+  hal_subregister_write(SR_SCCR1_CLKDIV, SCCKDIV_62_5k);
 
   /* ocr1 */ 
   macsc_write32( (volatile uint8_t *) RG_SCOCR1HH, 160); 
-  // hal_subregister_write(SR_SCCR1_SCENBO, 1);  // Enable Back off counter
-  //hal_subregister_write(SR_SCCR0_SCEN, 1);
+#ifdef BACKOFF
+  hal_subregister_write(SR_SCCR1_SCENBO, 1);  // Enable Back off counter
+#endif
 
   /* Clear IRQ status */
   hal_subregister_write(SR_SCIRQS, 0xFF);  
 
   /* Enable IRQ  */
   i = 0;
-  // i |= 0x10; // Backoff mask 640 us IRQ
+#ifdef BACKOFF
+   i |= 0x10; // Backoff mask 640 us IRQ
+#endif
   i |= 0x08; // Counter overflow mask
   i |= 0x01; // Compare 1 counter mask
   hal_register_write(RG_SCIRQM, i);
@@ -1709,9 +1721,9 @@ ISR(SCNT_OVFL_vect)
 ISR(SCNT_CMP1_vect)
 {
   uint32_t i =  get_symbol_counter();
-  i += 320 - 7;
-  macsc_write32( (volatile uint8_t *) RG_SCOCR1HH, i); 
-  TSCH_CLOCK();
+  //TSCH_CLOCK();
+  //i += 320 - 7;
+  //macsc_write32( (volatile uint8_t *) RG_SCOCR1HH, i); 
 }
 
 ISR(SCNT_CMP2_vect)
@@ -1724,6 +1736,7 @@ ISR(SCNT_CMP3_vect)
 
 ISR(SCNT_BACKOFF_vect)
 {
+  //TSCH_CLOCK();
 }
 
 /*---------------------------------------------------------------------------*/

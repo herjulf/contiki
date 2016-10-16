@@ -84,6 +84,20 @@ extern uint8_t debugflowsize,debugflow[DEBUGFLOWSIZE];
 #define DEBUGFLOW(c)
 #endif
 
+uint16_t
+rtimer_arch_now(void) 
+{
+  uint16_t t;
+  uint8_t sreg;
+
+  sreg = SREG;
+  cli();
+  t = (TCNT3);
+
+  SREG = sreg;
+  return t;
+}
+
 /*---------------------------------------------------------------------------*/
 #if defined(TCNT3) && RTIMER_ARCH_PRESCALER
 ISR (TIMER3_COMPA_vect) {
@@ -246,7 +260,10 @@ uint32_t longhowlong;
 #endif
     cli();
 	watchdog_stop();
-	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+	if(poll_mode)
+	  set_sleep_mode(SLEEP_MODE_IDLE);
+	else 
+	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
 
 /* Set TIMER2 clock asynchronus from external source, CTC mode */
     ASSR |= (1 << AS2);
@@ -255,7 +272,7 @@ uint32_t longhowlong;
 #if 0    //Prescale by 1024 -   32 ticks/sec, 8 seconds max sleep
     TCCR2B =((1<<CS22)|(1<<CS21)|(1<<CS20));
 	longhowlong=howlong*32UL; 
-#elif 0  // Prescale by 256 -  128 ticks/sec, 2 seconds max sleep
+#elif 1  // Prescale by 256 -  128 ticks/sec, 2 seconds max sleep
 	TCCR2B =((1<<CS22)|(1<<CS21)|(0<<CS20));
 	longhowlong=howlong*128UL;
 #elif 0  // Prescale by 128 -  256 ticks/sec, 1 seconds max sleep
@@ -264,13 +281,13 @@ uint32_t longhowlong;
 #elif 0  // Prescale by  64 -  512 ticks/sec, 500 msec max sleep
 	TCCR2B =((1<<CS22)|(0<<CS21)|(0<<CS20));
 	longhowlong=howlong*512UL;
-#elif 1  // Prescale by  32 - 1024 ticks/sec, 250 msec max sleep
+#elif 0  // Prescale by  32 - 1024 ticks/sec, 250 msec max sleep
 	TCCR2B =((0<<CS22)|(1<<CS21)|(1<<CS20));
 	longhowlong=howlong*1024UL;
 #elif 0  // Prescale by   8 - 4096 ticks/sec, 62.5 msec max sleep
 	TCCR2B =((0<<CS22)|(1<<CS21)|(0<<CS20));
 	longhowlong=howlong*4096UL;
-#else    // No Prescale -    32768 ticks/sec, 7.8 msec max sleep
+#else 0   // No Prescale -    32768 ticks/sec, 7.8 msec max sleep
 	TCCR2B =((0<<CS22)|(0<<CS21)|(1<<CS20));
 	longhowlong=howlong*32768UL;
 #endif
