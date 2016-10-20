@@ -379,9 +379,9 @@ get_rx_packet_timestamp(void)
   //last_packet_timestamp = RTIMER_NOW() - US_TO_RTIMERTICKS((get_symbol_counter() - get_SFD_timestamp() - 1) * 16);
   /* The remaining measured error is typically in range 0..16 usec.
    * Center it around zero, in the -8..+8 usec range. */
-  //last_packet_timestamp -= US_TO_RTIMERTICKS(8);
   last_packet_timestamp = RTIMER_NOW();
-  return last_packet_timestamp;
+  last_packet_timestamp -= US_TO_RTIMERTICKS(8);
+ return last_packet_timestamp;
 }
 
 /* Poll mode disabled by default */
@@ -856,7 +856,6 @@ flushrx(void)
     rf230_pending = 0;
   }
   if(poll_mode) {
-    ledtimer_blue = 1000;leds_on(LEDS_BLUE);
     rf230_pending = 0;
     return;
   }
@@ -1097,7 +1096,7 @@ rf230_init_mac_symbol_counter(void)
   /* Counter REG */
   i = 0;
   i |= 0x80; // Counter Sync.
-  i |= 0x20; // Counter enable
+  //i |= 0x20; // Counter enable
   //i |= 0x10; // RTC clock
   //i |= 0x08; // Auto timstamp Beacon, SFD
   i |= 0x01; // Compare 1 counter mode sel.
@@ -1121,8 +1120,8 @@ rf230_init_mac_symbol_counter(void)
 #ifdef BACKOFF
    i |= 0x10; // Backoff mask 640 us IRQ
 #endif
-  i |= 0x08; // Counter overflow mask
-  i |= 0x01; // Compare 1 counter mask
+   //i |= 0x08; // Counter overflow mask
+   //i |= 0x01; // Compare 1 counter mask
   hal_register_write(RG_SCIRQM, i);
 }
 
@@ -1438,7 +1437,6 @@ rf230_transmit(unsigned short payload_len)
   }
 
   if (tx_result==RADIO_TX_OK) {
-    ledtimer_red = 1000;leds_on(LEDS_RED);
 
     RIMESTATS_ADD(lltx);
 #if NETSTACK_CONF_WITH_RIME
@@ -1674,7 +1672,6 @@ ISR(TRX24_RX_START_vect)
 #if !RF230_CONF_AUTOACK
     rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
 #endif
-    ledtimer_green = 1000;leds_on(LEDS_GREEN);
     get_rx_packet_timestamp();
     rf230_interrupt(2);
 }

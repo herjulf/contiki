@@ -52,17 +52,18 @@
 #define F_CPU          8000000UL
 #endif
 
-
-
 /* Delay between GO signal and SFD
  * Measured 153us between GO and preamble. Add 5 bytes (preamble + SFD) air time: 153+5*32 = 313 */
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313))
+//#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313))
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(150))
 /* Delay between GO signal and start listening
  * Measured 104us: between GO signal and start listening */
+//#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
 #define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
 /* Delay between the SFD finishes arriving and it is detected in software */
-#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(14))
+#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(8))
 
+//#define TSCH_CONF_RX_WAIT  6400 //2200
 
 #define TSCH_DEBUG 1
 
@@ -81,10 +82,13 @@
 #define __TSCH_DEBUG_SLOT_START() do { \
     ledtimer_red = 1000;leds_on(LEDS_RED); } while(0);
 
-#define TSCH_DEBUG_SLOT_END() do { \
+#define __TSCH_DEBUG_SLOT_END() do { \
     ledtimer_yellow = 1000;leds_on(LEDS_YELLOW); } while(0);
 
 #define TSCH_CLOCK() do{ PORTD ^= (1<<PD6); } while(0);
+#define TSCH_CLOCK_HI() do{ PORTD |= (1<<PD6); } while(0);
+#define TSCH_CLOCK_LO() do{ PORTD &= ~(1<<PD6); } while(0);
+
 
 
 #endif /* TSCH_DEBUG */
@@ -210,7 +214,7 @@ typedef unsigned short uip_stats_t;
 /* TX routine does automatic cca and optional backoffs */
 #define RDC_CONF_HARDWARE_CSMA   1
 /* Allow MCU sleeping between channel checks */
-#define RDC_CONF_MCU_SLEEP         1
+#define RDC_CONF_MCU_SLEEP       1
 
 #if NETSTACK_CONF_WITH_IPV6
 #define LINKADDR_CONF_SIZE        8

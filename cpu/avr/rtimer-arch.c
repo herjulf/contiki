@@ -45,7 +45,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
-
+#include "contiki.h"
 #include "sys/energest.h"
 #include "sys/rtimer.h"
 #include "rtimer-arch.h"
@@ -240,6 +240,7 @@ rtimer_arch_schedule(rtimer_clock_t t)
 }
 
 #if RDC_CONF_MCU_SLEEP
+extern poll_mode;
 /*---------------------------------------------------------------------------*/
 void
 rtimer_arch_sleep(rtimer_clock_t howlong)
@@ -261,7 +262,8 @@ uint32_t longhowlong;
     cli();
 	watchdog_stop();
 	if(poll_mode)
-	  set_sleep_mode(SLEEP_MODE_IDLE);
+	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+	//set_sleep_mode(SLEEP_MODE_IDLE);
 	else 
 	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
 
@@ -269,25 +271,25 @@ uint32_t longhowlong;
     ASSR |= (1 << AS2);
     TCCR2A =(1<<WGM21);
 /* Set prescaler and TIMER2 output compare register */
-#if 0    //Prescale by 1024 -   32 ticks/sec, 8 seconds max sleep
+#if RTIMER_ARCH_PRESCALER==1024    //Prescale by 1024 -   32 ticks/sec, 8 seconds max sleep
     TCCR2B =((1<<CS22)|(1<<CS21)|(1<<CS20));
-	longhowlong=howlong*32UL; 
-#elif 1  // Prescale by 256 -  128 ticks/sec, 2 seconds max sleep
+    longhowlong=howlong*32UL; 
+#elif RTIMER_ARCH_PRESCALER==256  // Prescale by 256 -  128 ticks/sec, 2 seconds max sleep
 	TCCR2B =((1<<CS22)|(1<<CS21)|(0<<CS20));
 	longhowlong=howlong*128UL;
-#elif 0  // Prescale by 128 -  256 ticks/sec, 1 seconds max sleep
+#elif RTIMER_ARCH_PRESCALER==128  // Prescale by 128 -  256 ticks/sec, 1 seconds max sleep
 	TCCR2B =((1<<CS22)|(0<<CS21)|(1<<CS20));
 	longhowlong=howlong*256UL;
-#elif 0  // Prescale by  64 -  512 ticks/sec, 500 msec max sleep
+#elif RTIMER_ARCH_PRESCALER==64  // Prescale by  64 -  512 ticks/sec, 500 msec max sleep
 	TCCR2B =((1<<CS22)|(0<<CS21)|(0<<CS20));
 	longhowlong=howlong*512UL;
-#elif 0  // Prescale by  32 - 1024 ticks/sec, 250 msec max sleep
+#elif RTIMER_ARCH_PRESCALER==32  // Prescale by  32 - 1024 ticks/sec, 250 msec max sleep
 	TCCR2B =((0<<CS22)|(1<<CS21)|(1<<CS20));
 	longhowlong=howlong*1024UL;
-#elif 0  // Prescale by   8 - 4096 ticks/sec, 62.5 msec max sleep
+#elif RTIMER_ARCH_PRESCALER==8  // Prescale by   8 - 4096 ticks/sec, 62.5 msec max sleep
 	TCCR2B =((0<<CS22)|(1<<CS21)|(0<<CS20));
 	longhowlong=howlong*4096UL;
-#else 0   // No Prescale -    32768 ticks/sec, 7.8 msec max sleep
+#else   // No Prescale -    32768 ticks/sec, 7.8 msec max sleep
 	TCCR2B =((0<<CS22)|(0<<CS21)|(1<<CS20));
 	longhowlong=howlong*32768UL;
 #endif

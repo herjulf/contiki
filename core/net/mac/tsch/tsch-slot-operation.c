@@ -586,15 +586,14 @@ PT_THREAD(tsch_tx_slot(struct pt *pt, struct rtimer *t))
               BUSYWAIT_UNTIL_ABS(NETSTACK_RADIO.receiving_packet(),
                   tx_start_time, tx_duration + tsch_timing[tsch_ts_rx_ack_delay] + tsch_timing[tsch_ts_ack_wait] + RADIO_DELAY_BEFORE_DETECT);
               TSCH_DEBUG_TX_EVENT();
-
               ack_start_time = RTIMER_NOW() - RADIO_DELAY_BEFORE_DETECT;
 
               /* Wait for ACK to finish */
               BUSYWAIT_UNTIL_ABS(!NETSTACK_RADIO.receiving_packet(),
                                  ack_start_time, tsch_timing[tsch_ts_max_ack]);
               TSCH_DEBUG_TX_EVENT();
-              tsch_radio_off(TSCH_RADIO_CMD_OFF_WITHIN_TIMESLOT);
 
+              tsch_radio_off(TSCH_RADIO_CMD_OFF_WITHIN_TIMESLOT);
 #if TSCH_HW_FRAME_FILTERING
               /* Leaving promiscuous mode */
               NETSTACK_RADIO.get_value(RADIO_PARAM_RX_MODE, &radio_rx_mode);
@@ -655,6 +654,7 @@ PT_THREAD(tsch_tx_slot(struct pt *pt, struct rtimer *t))
                 }
                 mac_tx_status = MAC_TX_OK;
               } else {
+		ledtimer_red = 1000;leds_on(LEDS_RED);
                 mac_tx_status = MAC_TX_NOACK;
               }
             } else {
@@ -662,6 +662,7 @@ PT_THREAD(tsch_tx_slot(struct pt *pt, struct rtimer *t))
             }
           } else {
             mac_tx_status = MAC_TX_ERR;
+	    ledtimer_green = 1000;leds_on(LEDS_GREEN);
           }
         }
       }
@@ -944,6 +945,7 @@ PT_THREAD(tsch_slot_operation(struct rtimer *t, void *ptr))
     } else {
       int is_active_slot;
       TSCH_DEBUG_SLOT_START();
+      TSCH_CLOCK_HI();
       tsch_in_slot_operation = 1;
       /* Reset drift correction */
       drift_correction = 0;
@@ -979,6 +981,7 @@ PT_THREAD(tsch_slot_operation(struct rtimer *t, void *ptr))
           PT_SPAWN(&slot_operation_pt, &slot_rx_pt, tsch_rx_slot(&slot_rx_pt, t));
         }
       }
+      TSCH_CLOCK_LO();
       TSCH_DEBUG_SLOT_END();
     }
 
