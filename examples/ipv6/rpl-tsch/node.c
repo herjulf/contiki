@@ -174,6 +174,24 @@ PROCESS_THREAD(node_process, ev, data)
    * convenient in cooja for regression tests using z1 nodes
    * */
 
+#ifdef CONTIKI_TARGET_AVR_RSS2
+  unsigned char node_mac[8];
+  //unsigned char coordinator_mac[8] = { 0xfc, 0xc2, 0x3d, 0x00, 0x00, 0x00, 0x37, 0xdb }; //NSLAB
+  unsigned char coordinator_mac[8] = { 0xfc, 0xc2, 0x3d, 0x00, 0x00, 0x01, 0x83, 0x7e };
+
+  memcpy(node_mac, &uip_lladdr.addr, sizeof(linkaddr_t));
+
+  if(memcmp(node_mac, coordinator_mac, 8) == 0) {
+    if(LLSEC802154_ENABLED) {
+      node_role = role_6dr_sec;
+    } else {
+      node_role = role_6dr;
+    }
+  } else {
+    node_role = role_6ln;
+  }
+#endif
+
 #ifdef CONTIKI_TARGET_Z1
   extern unsigned char node_mac[8];
   unsigned char coordinator_mac[8] = { 0xc1, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };

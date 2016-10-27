@@ -54,16 +54,19 @@
 
 /* Delay between GO signal and SFD
  * Measured 153us between GO and preamble. Add 5 bytes (preamble + SFD) air time: 153+5*32 = 313 */
-//#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313))
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(150))
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313))
 /* Delay between GO signal and start listening
  * Measured 104us: between GO signal and start listening */
 //#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
-#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
+#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(24))
 /* Delay between the SFD finishes arriving and it is detected in software */
-#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(8))
+#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(150))
 
-//#define TSCH_CONF_RX_WAIT  6400 //2200
+#if NETSTACK_CONF_MAC==tschmac_driver
+#define WITH_SEND_CCA 0
+#define RF230_CONF_AUTOACK 0
+#define RF230_CONF_AUTORETRIES 0
+#endif
 
 #define TSCH_DEBUG 1
 
@@ -88,8 +91,6 @@
 #define TSCH_CLOCK() do{ PORTD ^= (1<<PD6); } while(0);
 #define TSCH_CLOCK_HI() do{ PORTD |= (1<<PD6); } while(0);
 #define TSCH_CLOCK_LO() do{ PORTD &= ~(1<<PD6); } while(0);
-
-
 
 #endif /* TSCH_DEBUG */
 

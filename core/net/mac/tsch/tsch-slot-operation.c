@@ -945,7 +945,7 @@ PT_THREAD(tsch_slot_operation(struct rtimer *t, void *ptr))
     } else {
       int is_active_slot;
       TSCH_DEBUG_SLOT_START();
-      TSCH_CLOCK_HI();
+      TSCH_CLOCK();
       tsch_in_slot_operation = 1;
       /* Reset drift correction */
       drift_correction = 0;
@@ -981,7 +981,6 @@ PT_THREAD(tsch_slot_operation(struct rtimer *t, void *ptr))
           PT_SPAWN(&slot_operation_pt, &slot_rx_pt, tsch_rx_slot(&slot_rx_pt, t));
         }
       }
-      TSCH_CLOCK_LO();
       TSCH_DEBUG_SLOT_END();
     }
 
