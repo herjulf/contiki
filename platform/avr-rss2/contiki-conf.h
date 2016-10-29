@@ -54,13 +54,15 @@
 
 /* Delay between GO signal and SFD
  * Measured 153us between GO and preamble. Add 5 bytes (preamble + SFD) air time: 153+5*32 = 313 */
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313))
+//#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313)) BRA
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(180))
 /* Delay between GO signal and start listening
  * Measured 104us: between GO signal and start listening */
 //#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
-#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(24))
+#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104)) // BRA
+//#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
 /* Delay between the SFD finishes arriving and it is detected in software */
-#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(150))
+#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(15))
 
 #if NETSTACK_CONF_MAC==tschmac_driver
 #define WITH_SEND_CCA 0
@@ -292,7 +294,6 @@ typedef unsigned short uip_stats_t;
 #define NBR_TABLE_CONF_MAX_NEIGHBORS      20
 #define UIP_CONF_DS6_DEFRT_NBU    2
 #define UIP_CONF_DS6_PREFIX_NBU   3
-#define UIP_CONF_MAX_ROUTES    20
 #define UIP_CONF_DS6_ADDR_NBU     3
 #define UIP_CONF_DS6_MADDR_NBU    0
 #define UIP_CONF_DS6_AADDR_NBU    0
@@ -327,7 +328,6 @@ typedef unsigned short uip_stats_t;
 #define NBR_TABLE_CONF_MAX_NEIGHBORS      20
 #define UIP_CONF_DS6_DEFRT_NBU    2
 #define UIP_CONF_DS6_PREFIX_NBU   3
-#define UIP_CONF_MAX_ROUTES    4
 #define UIP_CONF_DS6_ADDR_NBU     3
 #define UIP_CONF_DS6_MADDR_NBU    0
 #define UIP_CONF_DS6_AADDR_NBU    0
@@ -356,7 +356,6 @@ typedef unsigned short uip_stats_t;
 #define NBR_TABLE_CONF_MAX_NEIGHBORS      4
 #define UIP_CONF_DS6_DEFRT_NBU    2
 #define UIP_CONF_DS6_PREFIX_NBU   3
-#define UIP_CONF_MAX_ROUTES    4
 #define UIP_CONF_DS6_ADDR_NBU     3
 #define UIP_CONF_DS6_MADDR_NBU    0
 #define UIP_CONF_DS6_AADDR_NBU    0
@@ -368,6 +367,10 @@ typedef unsigned short uip_stats_t;
 #else
 /* #error Network configuration not specified! */
 #endif /* Network setup */
+
+#ifndef UIP_CONF_MAX_ROUTES
+#define UIP_CONF_MAX_ROUTES    4
+#endif
 
 #ifndef QUEUEBUF_CONF_NUM
 #define QUEUEBUF_CONF_NUM         15

@@ -392,7 +392,7 @@ static radio_status_t radio_set_trx_state(uint8_t new_state);
 
 
 static void
-set_poll_mode(uint8_t enable)
+set_poll_mode(bool enable)
 {
   poll_mode = enable;
   if(poll_mode) {
@@ -403,6 +403,50 @@ set_poll_mode(uint8_t enable)
     /* Initialize and enable interrupts */
     radio_set_trx_state(RX_AACK_ON);
   }
+}
+
+static bool
+get_poll_mode(void)
+{
+  return poll_mode;
+}
+
+void
+set_frame_filtering(bool i)
+{
+  if(i)
+    hal_subregister_write(SR_AACK_PROM_MODE, 0);
+  else {
+    ledtimer_red = 1000;leds_on(LEDS_RED);
+    hal_subregister_write(SR_AACK_PROM_MODE, 1);
+  }
+}
+
+static bool
+get_frame_filtering(void)
+{
+  int i = hal_subregister_read(SR_AACK_PROM_MODE);
+  if(i) 
+    return 0;
+  return 1;
+}
+
+void
+set_auto_ack(bool i)
+{
+  if(i)
+    hal_subregister_write(SR_AACK_DIS_ACK, 0);
+  else
+    hal_subregister_write(SR_AACK_DIS_ACK, 1);
+}
+
+static bool
+get_auto_ack(void)
+{
+  int i = hal_subregister_read(SR_AACK_DIS_ACK);
+  if(i) 
+    return 0;
+  return 1;
 }
 /*---------------------------------------------------------------------------*/
 static radio_result_t
@@ -432,14 +476,15 @@ get_value(radio_param_t param, radio_value_t *value)
     return RADIO_RESULT_OK;
   case RADIO_PARAM_RX_MODE:
     *value = 0;
-#if 0
-    if(REG(RFCORE_XREG_FRMFILT0) & RFCORE_XREG_FRMFILT0_FRAME_FILTER_EN) {
+    if(get_frame_filtering()) {
       *value |= RADIO_RX_MODE_ADDRESS_FILTER;
     }
-    if(REG(RFCORE_XREG_FRMCTRL0) & RFCORE_XREG_FRMCTRL0_AUTOACK) {
+    if(get_auto_ack()) {
       *value |= RADIO_RX_MODE_AUTOACK;
     }
-#endif
+    if(get_poll_mode()) {
+      *value |= RADIO_RX_MODE_POLL_MODE;
+    }
     return RADIO_RESULT_OK;
   case RADIO_PARAM_TXPOWER:
     *value = rf230_get_txpower();
@@ -503,14 +548,12 @@ set_value(radio_param_t param, radio_value_t value)
     return RADIO_RESULT_OK;
   case RADIO_PARAM_RX_MODE:
 
-    //if(value & ~(RADIO_RX_MODE_ADDRESS_FILTER |
-    //             RADIO_RX_MODE_AUTOACK)) {
-    //  return RADIO_RESULT_INVALID_VALUE;
-    // }
-
-    //set_frame_filtering((value & RADIO_RX_MODE_ADDRESS_FILTER) != 0);
-    //set_auto_ack((value & RADIO_RX_MODE_AUTOACK) != 0);
-    
+    if(value & ~(RADIO_RX_MODE_ADDRESS_FILTER | RADIO_RX_MODE_POLL_MODE |
+                 RADIO_RX_MODE_AUTOACK)) {
+      return RADIO_RESULT_INVALID_VALUE;
+    }
+    set_frame_filtering((value & RADIO_RX_MODE_ADDRESS_FILTER) != 0);
+    set_auto_ack((value & RADIO_RX_MODE_AUTOACK) != 0);
     set_poll_mode((value & RADIO_RX_MODE_POLL_MODE) != 0);
     return RADIO_RESULT_OK;
 
@@ -1472,6 +1515,8 @@ rf230_prepare(const void *payload, unsigned short payload_len)
 {
   int ret = 0;
   uint8_t total_len,*pbuf;
+  uint8_t reg;
+  rtimer_clock_t time;
 #if RF230_CONF_TIMESTAMPS_NOTNOW
   struct timestamp timestamp;
 #endif
@@ -1520,6 +1565,18 @@ rf230_prepare(const void *payload, unsigned short payload_len)
   pbuf+=TIMESTAMP_LEN;
 #endif
 /*------------------------------------------------------------*/  
+#if 0
+  // Wait until PLL ON state
+  time = RTIMER_NOW() + RTIMER_SECOND;//  / 1000;
+  do {
+    reg = radio_get_trx_state();
+      
+      // Check for block
+      if (RTIMER_CLOCK_LT(time, RTIMER_NOW())) {
+	  return RADIO_TX_ERR;
+	}
+    } while (reg != PLL_ON);
+#endif
 
 #ifdef RF230BB_HOOK_TX_PACKET
 #if !RF230_CONF_CHECKSUM
