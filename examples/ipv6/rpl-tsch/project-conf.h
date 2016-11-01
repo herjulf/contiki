@@ -99,7 +99,7 @@
 /* TSCH logging. 0: disabled. 1: basic log. 2: with delayed
  * log messages from interrupt */
 #undef TSCH_LOG_CONF_LEVEL
-#define TSCH_LOG_CONF_LEVEL 2
+#define TSCH_LOG_CONF_LEVEL 3
 
 /* IEEE802.15.4 PANID */
 #undef IEEE802154_CONF_PANID
@@ -112,7 +112,7 @@
 /* 6TiSCH minimal schedule length.
  * Larger values result in less frequent active slots: reduces capacity and saves energy. */
 #undef TSCH_SCHEDULE_CONF_DEFAULT_LENGTH
-#define TSCH_SCHEDULE_CONF_DEFAULT_LENGTH 3
+#define TSCH_SCHEDULE_CONF_DEFAULT_LENGTH 1
 
 #if WITH_SECURITY
 
@@ -180,5 +180,16 @@
 #define TSCH_CONF_HW_FRAME_FILTERING    0
 #endif /* CONTIKI_TARGET_CC2538DK || CONTIKI_TARGET_ZOUL \
        || CONTIKI_TARGET_OPENMOTE_CC2538 */
+
+#define TSCH_CONF_RADIO_ON_DURING_TIMESLOT 1
+//#define TSCH_CONF_DEFAULT_TIMESLOT_LENGTH 15000
+#define WITH_SEND_CCA 0
+#define RF230_CONF_AUTOACK 0
+//#define RF230_CONF_AUTORETRIES 0
+//#define TSCH_CONF_HW_FRAME_FILTERING 0
+//#define TSCH_CONF_ADAPTIVE_TIMESYNC 0
+
+//#define TSCH_CONF_RX_WAIT 2200
+//#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 15, 20, 15, 20 }
 
 #endif /* __PROJECT_CONF_H__ */

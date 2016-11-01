@@ -550,6 +550,8 @@ PT_THREAD(tsch_tx_slot(struct pt *pt, struct rtimer *t))
           /* delay before TX */
           TSCH_SCHEDULE_AND_YIELD(pt, t, current_slot_start, tsch_timing[tsch_ts_tx_offset] - RADIO_DELAY_BEFORE_TX, "TxBeforeTx");
           TSCH_DEBUG_TX_EVENT();
+	  if(tsch_is_coordinator) TSCH_CLOCK();
+
           /* send packet already in radio tx buffer */
           mac_tx_status = NETSTACK_RADIO.transmit(packet_len);
           /* Save tx timestamp */
@@ -754,6 +756,8 @@ PT_THREAD(tsch_rx_slot(struct pt *pt, struct rtimer *t))
 
     /* Start radio for at least guard time */
     tsch_radio_on(TSCH_RADIO_CMD_ON_WITHIN_TIMESLOT);
+    if(!tsch_is_coordinator) TSCH_CLOCK();
+
     packet_seen = NETSTACK_RADIO.receiving_packet() || NETSTACK_RADIO.pending_packet();
     if(!packet_seen) {
       /* Check if receiving within guard time */
@@ -945,7 +949,7 @@ PT_THREAD(tsch_slot_operation(struct rtimer *t, void *ptr))
     } else {
       int is_active_slot;
       TSCH_DEBUG_SLOT_START();
-      TSCH_CLOCK();
+      if(!tsch_is_coordinator)  TSCH_CLOCK();
       tsch_in_slot_operation = 1;
       /* Reset drift correction */
       drift_correction = 0;
