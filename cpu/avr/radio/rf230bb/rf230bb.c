@@ -385,7 +385,7 @@ get_rx_packet_timestamp(void)
 }
 
 /* Poll mode disabled by default */
-static uint8_t poll_mode = 0;
+uint8_t poll_mode = 0;
 /*---------------------------------------------------------------------------*/
 
 static radio_status_t radio_set_trx_state(uint8_t new_state);
@@ -396,11 +396,13 @@ set_poll_mode(bool enable)
 {
   poll_mode = enable;
   if(poll_mode) {
+    rf230_set_rpc(0x0); /* Disbable all RPC features */
     radio_set_trx_state(RX_ON);
     ////hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
     hal_register_write(RG_IRQ_MASK, 0xFF);
   } else {
     /* Initialize and enable interrupts */
+    rf230_set_rpc(0xFF); /* Enable all RPC features. Only XRFR2 radios */
     radio_set_trx_state(RX_AACK_ON);
   }
 }
@@ -1730,7 +1732,8 @@ ISR(TRX24_RX_START_vect)
     rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
 #endif
     get_rx_packet_timestamp();
-    rf230_interrupt(2);
+    if(!poll_mode) 
+      rf230_interrupt(2);
 }
 
 /* Received packet interrupt */

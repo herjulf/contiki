@@ -758,7 +758,8 @@ PT_THREAD(tsch_rx_slot(struct pt *pt, struct rtimer *t))
     tsch_radio_on(TSCH_RADIO_CMD_ON_WITHIN_TIMESLOT);
     if(!tsch_is_coordinator) TSCH_CLOCK();
 
-    packet_seen = NETSTACK_RADIO.receiving_packet() || NETSTACK_RADIO.pending_packet();
+    //packet_seen = NETSTACK_RADIO.receiving_packet() || NETSTACK_RADIO.pending_packet();
+    packet_seen = NETSTACK_RADIO.receiving_packet();
     if(!packet_seen) {
       /* Check if receiving within guard time */
       BUSYWAIT_UNTIL_ABS((packet_seen = NETSTACK_RADIO.receiving_packet()),
@@ -949,7 +950,7 @@ PT_THREAD(tsch_slot_operation(struct rtimer *t, void *ptr))
     } else {
       int is_active_slot;
       TSCH_DEBUG_SLOT_START();
-      if(!tsch_is_coordinator)  TSCH_CLOCK();
+      TSCH_CLOCK();
       tsch_in_slot_operation = 1;
       /* Reset drift correction */
       drift_correction = 0;

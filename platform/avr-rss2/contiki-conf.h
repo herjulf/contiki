@@ -39,6 +39,8 @@
 #ifndef CONTIKI_CONF_H_
 #define CONTIKI_CONF_H_
 
+#include <stdint.h>
+
 /* include the project config */
 /* PROJECT_CONF_H might be defined in the project Makefile */
 #ifdef PROJECT_CONF_H
@@ -52,17 +54,40 @@
 #define F_CPU          8000000UL
 #endif
 
+
+#if 0
+/* Platform typedefs */
+typedef uint32_t clock_time_t;
+typedef uint32_t uip_stats_t;
+
+/* Clock (time) comparison macro */
+#define CLOCK_LT(a, b)  ((signed long)((a) - (b)) < 0)
+
+/*
+ * rtimer.h typedefs rtimer_clock_t as unsigned short. We need to define
+ * RTIMER_CLOCK_DIFF to override this
+ */
+typedef uint32_t rtimer_clock_t;
+#define RTIMER_CLOCK_DIFF(a, b)     ((int32_t)((a) - (b)))
+
+rtimer_clock_t rtimer_arch_now();
+
+#endif
+
+/* 313 200 0 */
+/* 313 200 10 */
+/* 300 200 10 */
 /* Delay between GO signal and SFD
  * Measured 153us between GO and preamble. Add 5 bytes (preamble + SFD) air time: 153+5*32 = 313 */
 //#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313)) BRA
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(180))
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(300))
 /* Delay between GO signal and start listening
  * Measured 104us: between GO signal and start listening */
 //#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
-#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104)) // BRA
+#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(215)) // BRA
 //#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
 /* Delay between the SFD finishes arriving and it is detected in software */
-#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(15))
+#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(40))
 
 #if NETSTACK_CONF_MAC==tschmac_driver
 #define WITH_SEND_CCA 0

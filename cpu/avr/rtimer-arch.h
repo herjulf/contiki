@@ -82,5 +82,6 @@
 #define rtimer_arch_now() (0)
 #endif
 
+uint16_t rtimer_arch_now(void);
 void rtimer_arch_sleep(rtimer_clock_t howlong);
 #endif /* RTIMER_ARCH_H_ */

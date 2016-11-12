@@ -36,7 +36,9 @@
 #include "sys/ctimer.h"
 #include "dev/leds.h"
 #include "dev/battery-sensor.h"
+#ifdef CONTIKI_TARGET_AVR_RSS2
 #include "dev/temp_mcu-sensor.h"
+#endif
 #include "dev/light-sensor.h"
 #ifdef CO2
 #include "dev/co2_sa_kxx-sensor.h"
@@ -91,7 +93,7 @@ send_packet(void *ptr)
   static int seq_id;
   char buf[MAX_PAYLOAD_LEN];
   int len = 0;
-  
+
   seq_id++;
 
   len += snprintf((char *) &buf[len], sizeof(buf), "&: ");
@@ -102,7 +104,9 @@ send_packet(void *ptr)
    */
 
   if(node_id == 0) {
+#ifdef CONTIKI_TARGET_AVR_RSS2
     len += snprintf((char *) &buf[len], sizeof(buf), "T_MCU=%-d ", temp_mcu_sensor.value(0));
+#endif
     len += snprintf((char *) &buf[len], sizeof(buf), "LIGHT=%-d ", light_sensor.value(0));
 #ifdef CO2
     len += snprintf((char *) &buf[len], sizeof(buf), "CO2=%-d ", co2_sa_kxx_sensor.value(value));
@@ -183,7 +187,9 @@ PROCESS_THREAD(udp_client_process, ev, data)
   PROCESS_PAUSE();
 
   SENSORS_ACTIVATE(battery_sensor);
+#ifdef CONTIKI_TARGET_AVR_RSS2
   SENSORS_ACTIVATE(temp_mcu_sensor);
+#endif
   SENSORS_ACTIVATE(light_sensor);
 #ifdef CO2
   SENSORS_ACTIVATE(co2_sa_kxx_sensor);
