@@ -80,14 +80,14 @@ rtimer_clock_t rtimer_arch_now();
 /* Delay between GO signal and SFD
  * Measured 153us between GO and preamble. Add 5 bytes (preamble + SFD) air time: 153+5*32 = 313 */
 //#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313)) BRA
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(300))
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(315))
 /* Delay between GO signal and start listening
  * Measured 104us: between GO signal and start listening */
 //#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
-#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(215)) // BRA
+#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(200)) // BRA
 //#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
 /* Delay between the SFD finishes arriving and it is detected in software */
-#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(40))
+#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(10))
 
 #if NETSTACK_CONF_MAC==tschmac_driver
 #define WITH_SEND_CCA 0
