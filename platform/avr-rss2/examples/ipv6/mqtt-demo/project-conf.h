@@ -46,7 +46,7 @@
 
 /* If undefined, the demo will attempt to connect to IBM's quickstart */
 //#define MQTT_DEMO_BROKER_IP_ADDR "aaaa::1"
-//#define MQTT_DEMO_BROKER_IP_ADDR "::ffff:c010:7dea" 
+#define MQTT_DEMO_BROKER_IP_ADDR "::ffff:c010:7dea" 
 /* "0064:ff9b:0000:0000:0000:0000:b8ac:7cbd"; */
 
 #define NETSTACK_CONF_MAC         csma_driver
@@ -54,7 +54,7 @@
 #define NETSTACK_CONF_FRAMER      framer_802154
 #define NETSTACK_CONF_RADIO       rf230_driver
 
-#define BOARD_STRING  "GAMMA"
+#define BOARD_STRING  "greeniot"
 
 /*---------------------------------------------------------------------------*/
 #endif /* PROJECT_CONF_H_ */
