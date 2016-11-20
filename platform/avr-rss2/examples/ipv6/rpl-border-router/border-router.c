@@ -362,7 +362,8 @@ PROCESS_THREAD(border_router_process, ev, data)
   NETSTACK_MAC.off(1);
 
 /* Derived from link local (MAC) address */
-  uip_ip6addr(&ipaddr, 0xaaaa, 0, 0, 0, 0, 0, 0, 0);
+  //uip_ip6addr(&ipaddr, 0xaaaa, 0, 0, 0, 0, 0, 0, 0);
+  uip_ip6addr(&ipaddr, 0xfd00, 0, 0, 0, 0, 0, 0, 0);
   set_prefix_64(&ipaddr);
   print_local_addresses();
 
