@@ -92,17 +92,6 @@ test_values(void)
     return 0;
   }
 
-  /* Temp sensor */
-  t = ((double) temp_sensor.value(0)/100.);
-  if( t > 3 && t < 35 ) {
-    ret = 1;
-    printf("OK temp sensor\n");
-  }
-  else {
-    printf("ERR temp sensor\n");
-    return  0;
-  }
-
   v = (double) adc_read_v_in();
   if( v > 4.7 && v < 5.3 ) {
     ret = 1;
@@ -123,6 +112,17 @@ test_values(void)
     return  0;
   }
   return ret;
+
+  /* Temp sensor */
+  t = ((double) temp_sensor.value(0)/100.);
+  if( t > 3 && t < 35 ) {
+    ret = 1;
+    printf("OK temp sensor\n");
+  }
+  else {
+    printf("ERR temp sensor\n");
+    return  0;
+  }
 }
 
 static void
