@@ -19,6 +19,9 @@ endif
 ifeq ($(TARGET),nooliberry)
   PROJECT_SOURCEFILES += slip-radio-rf230.c
 endif
+ifeq ($(TARGET),avr-rss2)
+  PROJECT_SOURCEFILES += slip-radio-rf230.c
+endif
 ifeq ($(TARGET),econotag)
   PROJECT_SOURCEFILES += slip-radio-mc1322x.c
 endif
