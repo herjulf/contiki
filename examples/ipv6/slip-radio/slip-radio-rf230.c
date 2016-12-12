@@ -34,15 +34,11 @@
 #include "contiki.h"
 #include "cmd.h"
 
-#include "radio/rf230/radio.h"
-#include "radio/rf230bb/rf230bb.h"
-
-
 #define DEBUG 0
 #if DEBUG
 #include <stdio.h>
-#define PRINTF(FORMAT,args...) printf_P(PSTR(FORMAT),##args)
-#define PRINTSHORT(FORMAT,args...) printf_P(PSTR(FORMAT),##args)
+#define PRINTF(FORMAT,args...) printf(FORMAT,##args)
+#define PRINTSHORT(FORMAT,args...) printfFORMAT,##args)
 #else
 #define PRINTF(...)
 #define PRINTSHORT(...)

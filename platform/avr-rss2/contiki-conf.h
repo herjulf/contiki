@@ -170,7 +170,9 @@ typedef unsigned short uip_stats_t;
 #ifndef UIP_CONF_TCP
 #define UIP_CONF_TCP              1
 #endif
+#ifndef NETSTACK_CONF_NETWORK
 #define NETSTACK_CONF_NETWORK     sicslowpan_driver
+#endif
 #define SICSLOWPAN_CONF_COMPRESSION SICSLOWPAN_COMPRESSION_HC06
 #else
 /* ip4 should build but is largely untested */

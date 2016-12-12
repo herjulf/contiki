@@ -60,7 +60,7 @@ int packet_pos;
 
 static int slip_radio_cmd_handler(const uint8_t *data, int len);
 
-#if CONTIKI_TARGET_NOOLIBERRY
+#if defined(CONTIKI_TARGET_NOOLIBERRY) || defined(CONTIKI_TARGET_AVR_RSS2)
 int cmd_handler_rf230(const uint8_t *data, int len);
 #elif CONTIKI_TARGET_ECONOTAG
 int cmd_handler_mc1322x(const uint8_t *data, int len);
