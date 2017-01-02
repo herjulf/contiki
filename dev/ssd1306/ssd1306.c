@@ -266,6 +266,12 @@ ssd1306_hello(void)
 }
 
 void
+ssd1306_show(char *s)
+{
+  ssd1306_string_show(ssd1306xled_font6x8, s);
+}
+
+void
 ssd1306_init(void)
 {
   uint8_t j;
@@ -300,4 +306,30 @@ ssd1306_init(void)
   //ssd1306_cmd(SSD1306_INVERTDISPLAY);                 // 0xA7
   ssd1306_cmd(SSD1306_DISPLAYON);                     //switch on OLED
   ssd1306_hello();
+}
+
+void scroll_run() 
+{
+  int scroll = 0;
+  
+  for (int line = 0; line < 20; ++line) {
+    oled.clearToEOL();
+    oled.print("Line ");
+    oled.println(line);
+    if (line >= 4) {
+      for (int i = 0; i < 8; ++i) {
+	delay(50);
+	oled.ssd1306WriteCmd(SSD1306_SETSTARTLINE | scroll % 64);
+	++scroll;
+      }
+    } else {
+      delay(400);
+    }
+    if (oled.row() >= 7 && scroll >= 32) {
+      oled.home();
+    }
+    if (scroll >= 64) {
+      scroll = 0;
+    }
+  }
 }
