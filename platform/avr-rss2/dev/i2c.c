@@ -230,5 +230,10 @@ i2c_probe(void)
     probed |= I2C_BME280;
     print_delim(p++, "BME280", del);
   }
+  if(!i2c_start(I2C_SSD1306_ADDR)) {
+    i2c_stop();
+    probed |= I2C_SSD1306;
+    print_delim(p++, "SSD1306", del);
+  }
   return probed;
 }

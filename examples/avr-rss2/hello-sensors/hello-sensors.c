@@ -126,6 +126,9 @@ PROCESS_THREAD(hello_sensors_process, ev, data)
   leds_on(LEDS_RED);
   leds_on(LEDS_YELLOW);
 
+  if( i2c_probed & I2C_SSD1306 ) {
+    ssd1306_init(); 
+  }
   /* 
    * Delay 5 sec 
    * Gives a chance to trigger some pulses
