@@ -262,11 +262,15 @@ uint32_t longhowlong;
     cli();
 	watchdog_stop();
 	if(poll_mode)
+#if NETSTACK_CONF_MAC==tschmac_driver
+	  set_sleep_mode(SLEEP_MODE_IDLE);
+#else
 	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
-	//set_sleep_mode(SLEEP_MODE_IDLE);
+#endif
 	else 
 	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
 
+#if NETSTACK_CONF_MAC!=tschmac_driver
 /* Set TIMER2 clock asynchronus from external source, CTC mode */
     ASSR |= (1 << AS2);
     TCCR2A =(1<<WGM21);
@@ -345,6 +349,7 @@ uint32_t longhowlong;
 	longhowlong*=howlong;
     clock_adjust_ticks(longhowlong/RTIMER_ARCH_SECOND);
 
+#endif /* NETSTACK_CONF_MAC!=tschmac_driver */
 }
 #if !AVR_CONF_USE32KCRYSTAL
 /*---------------------------------------------------------------------------*/
@@ -352,7 +357,7 @@ uint32_t longhowlong;
 
 ISR(TIMER2_COMPA_vect)
 {
-//    TIMSK2 &= ~(1 << OCIE2A);       //Just one interrupt needed for waking
+  TIMSK2 &= ~(1 << OCIE2A);       //Just one interrupt needed for waking
 }
 #endif /* !AVR_CONF_USE32KCRYSTAL */
 #endif /* RDC_CONF_MCU_SLEEP */

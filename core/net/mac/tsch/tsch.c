@@ -56,8 +56,6 @@
 #include "net/mac/tsch/tsch-security.h"
 #include "net/mac/mac-sequence.h"
 #include "lib/random.h"
-#include "dev/leds.h"
-
 
 #if FRAME802154_VERSION < FRAME802154_IEEE802154E_2012
 #error TSCH: FRAME802154_VERSION must be at least FRAME802154_IEEE802154E_2012
@@ -141,6 +139,8 @@ uint8_t tsch_join_priority;
 static uint8_t tsch_packet_seqno = 0;
 /* Current period for EB output */
 static clock_time_t tsch_current_eb_period;
+/* Current period for keepalive output */
+static clock_time_t tsch_current_ka_timeout;
 
 /* timer for sending keepalive messages */
 static struct ctimer keepalive_timer;
@@ -177,8 +177,15 @@ tsch_set_join_priority(uint8_t jp)
 }
 /*---------------------------------------------------------------------------*/
 void
+tsch_set_ka_timeout(uint32_t timeout)
+{
+  tsch_current_ka_timeout = timeout;
+}
+/*---------------------------------------------------------------------------*/
+void
 tsch_set_eb_period(uint32_t period)
 {
+  //tsch_current_eb_period = MIN(period, TSCH_MAX_EB_PERIOD);
   tsch_current_eb_period = period;
 }
 /*---------------------------------------------------------------------------*/
@@ -246,10 +253,10 @@ keepalive_send()
 void
 tsch_schedule_keepalive()
 {
-  /* Pick a delay in the range [TSCH_KEEPALIVE_TIMEOUT*0.9, TSCH_KEEPALIVE_TIMEOUT[ */
-  if(!tsch_is_coordinator && tsch_is_associated) {
-    unsigned long delay = (TSCH_KEEPALIVE_TIMEOUT - TSCH_KEEPALIVE_TIMEOUT / 10)
-      + random_rand() % (TSCH_KEEPALIVE_TIMEOUT / 10);
+  /* Pick a delay in the range [tsch_current_ka_timeout*0.9, tsch_current_ka_timeout[ */
+  if(!tsch_is_coordinator && tsch_is_associated && tsch_current_ka_timeout > 0) {
+    unsigned long delay = (tsch_current_ka_timeout - tsch_current_ka_timeout / 10)
+      + random_rand() % (tsch_current_ka_timeout / 10);
     ctimer_set(&keepalive_timer, delay, keepalive_send, NULL);
   }
 }
@@ -358,7 +365,6 @@ tsch_rx_process_pending()
     ringbufindex_get(&input_ringbuf);
 
     if(is_data) {
-      //ledtimer_green = 1000;leds_on(LEDS_GREEN);
       /* Pass to upper layers */
       packet_input();
     } else if(is_eb) {
@@ -885,10 +891,6 @@ send_packet(mac_callback_t sent, void *ptr)
     }
     packetbuf_set_attr(PACKETBUF_ATTR_MAC_SEQNO, tsch_packet_seqno);
     packetbuf_set_attr(PACKETBUF_ATTR_MAC_ACK, 1);
-
-    //ledtimer_blue = 1000;leds_on(LEDS_BLUE);
-
-
   } else {
     /* Broadcast packets shall be added to broadcast queue
      * The broadcast address in Contiki is linkaddr_null which is equal
@@ -944,8 +946,6 @@ packet_input(void)
   int frame_parsed = 1;
 
   frame_parsed = NETSTACK_FRAMER.parse();
-  //ledtimer_green = 1000;leds_on(LEDS_GREEN);
-
 
   if(frame_parsed < 0) {
     PRINTF("TSCH:! failed to parse %u\n", packetbuf_datalen());
@@ -966,18 +966,10 @@ packet_input(void)
       }
     }
 
-    extern volatile uint32_t get_symbol_counter();
-    extern volatile uint32_t get_symbol_counter_1();
-    extern volatile uint32_t get_SFD_timestamp();
-    extern volatile uint32_t get_ocr1_counter();
     if(!duplicate) {
       PRINTF("TSCH: received from %u with seqno %u\n",
              TSCH_LOG_ID_FROM_LINKADDR(packetbuf_addr(PACKETBUF_ADDR_SENDER)),
              packetbuf_attr(PACKETBUF_ATTR_MAC_SEQNO));
-
-      printf("CNT/SFD  %-lu/%-lu ",  get_symbol_counter(),  get_symbol_counter_1());
-      printf("%lu ", get_SFD_timestamp());
-      printf("ocr1=%lu\n", get_ocr1_counter());
       NETSTACK_LLSEC.input();
     }
   }

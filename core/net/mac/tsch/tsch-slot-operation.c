@@ -54,7 +54,10 @@
 #include "net/mac/tsch/tsch-packet.h"
 #include "net/mac/tsch/tsch-security.h"
 #include "net/mac/tsch/tsch-adaptive-timesync.h"
-#include "dev/leds.h"
+#if CONTIKI_TARGET_COOJA || CONTIKI_TARGET_COOJA_IP64
+#include "lib/simEnvChange.h"
+#include "sys/cooja_mt.h"
+#endif /* CONTIKI_TARGET_COOJA || CONTIKI_TARGET_COOJA_IP64 */
 
 #if TSCH_LOG_LEVEL >= 1
 #define DEBUG DEBUG_PRINT
@@ -105,7 +108,10 @@
 #if RTIMER_SECOND < (32 * 1024)
 #error "TSCH: RTIMER_SECOND < (32 * 1024)"
 #endif
-#if RTIMER_SECOND >= 200000
+#if CONTIKI_TARGET_COOJA || CONTIKI_TARGET_COOJA_IP64
+/* Use 0 usec guard time for Cooja Mote with a 1 MHz Rtimer*/
+#define RTIMER_GUARD 0u
+#elif RTIMER_SECOND >= 200000
 #define RTIMER_GUARD (RTIMER_SECOND / 100000)
 #else
 #define RTIMER_GUARD 2u
@@ -201,7 +207,12 @@ tsch_get_lock(void)
     if(tsch_in_slot_operation) {
       busy_wait = 1;
       busy_wait_time = RTIMER_NOW();
-      while(tsch_in_slot_operation);
+      while(tsch_in_slot_operation) {
+#if CONTIKI_TARGET_COOJA || CONTIKI_TARGET_COOJA_IP64
+        simProcessRunValue = 1;
+        cooja_mt_yield();
+#endif /* CONTIKI_TARGET_COOJA || CONTIKI_TARGET_COOJA_IP64 */
+      }
       busy_wait_time = RTIMER_NOW() - busy_wait_time;
     }
     if(!tsch_locked) {
@@ -550,8 +561,6 @@ PT_THREAD(tsch_tx_slot(struct pt *pt, struct rtimer *t))
           /* delay before TX */
           TSCH_SCHEDULE_AND_YIELD(pt, t, current_slot_start, tsch_timing[tsch_ts_tx_offset] - RADIO_DELAY_BEFORE_TX, "TxBeforeTx");
           TSCH_DEBUG_TX_EVENT();
-	  if(tsch_is_coordinator) TSCH_CLOCK();
-
           /* send packet already in radio tx buffer */
           mac_tx_status = NETSTACK_RADIO.transmit(packet_len);
           /* Save tx timestamp */
@@ -588,14 +597,15 @@ PT_THREAD(tsch_tx_slot(struct pt *pt, struct rtimer *t))
               BUSYWAIT_UNTIL_ABS(NETSTACK_RADIO.receiving_packet(),
                   tx_start_time, tx_duration + tsch_timing[tsch_ts_rx_ack_delay] + tsch_timing[tsch_ts_ack_wait] + RADIO_DELAY_BEFORE_DETECT);
               TSCH_DEBUG_TX_EVENT();
+
               ack_start_time = RTIMER_NOW() - RADIO_DELAY_BEFORE_DETECT;
 
               /* Wait for ACK to finish */
               BUSYWAIT_UNTIL_ABS(!NETSTACK_RADIO.receiving_packet(),
                                  ack_start_time, tsch_timing[tsch_ts_max_ack]);
               TSCH_DEBUG_TX_EVENT();
-
               tsch_radio_off(TSCH_RADIO_CMD_OFF_WITHIN_TIMESLOT);
+
 #if TSCH_HW_FRAME_FILTERING
               /* Leaving promiscuous mode */
               NETSTACK_RADIO.get_value(RADIO_PARAM_RX_MODE, &radio_rx_mode);
@@ -656,7 +666,6 @@ PT_THREAD(tsch_tx_slot(struct pt *pt, struct rtimer *t))
                 }
                 mac_tx_status = MAC_TX_OK;
               } else {
-		ledtimer_red = 1000;leds_on(LEDS_RED);
                 mac_tx_status = MAC_TX_NOACK;
               }
             } else {
@@ -664,7 +673,6 @@ PT_THREAD(tsch_tx_slot(struct pt *pt, struct rtimer *t))
             }
           } else {
             mac_tx_status = MAC_TX_ERR;
-	    ledtimer_green = 1000;leds_on(LEDS_GREEN);
           }
         }
       }
@@ -756,10 +764,7 @@ PT_THREAD(tsch_rx_slot(struct pt *pt, struct rtimer *t))
 
     /* Start radio for at least guard time */
     tsch_radio_on(TSCH_RADIO_CMD_ON_WITHIN_TIMESLOT);
-    if(!tsch_is_coordinator) TSCH_CLOCK();
-
-    //packet_seen = NETSTACK_RADIO.receiving_packet() || NETSTACK_RADIO.pending_packet();
-    packet_seen = NETSTACK_RADIO.receiving_packet();
+    packet_seen = NETSTACK_RADIO.receiving_packet() || NETSTACK_RADIO.pending_packet();
     if(!packet_seen) {
       /* Check if receiving within guard time */
       BUSYWAIT_UNTIL_ABS((packet_seen = NETSTACK_RADIO.receiving_packet()),
@@ -950,7 +955,6 @@ PT_THREAD(tsch_slot_operation(struct rtimer *t, void *ptr))
     } else {
       int is_active_slot;
       TSCH_DEBUG_SLOT_START();
-      TSCH_CLOCK();
       tsch_in_slot_operation = 1;
       /* Reset drift correction */
       drift_correction = 0;
