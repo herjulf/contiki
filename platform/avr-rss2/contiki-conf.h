@@ -74,20 +74,14 @@ rtimer_clock_t rtimer_arch_now();
 
 #endif
 
-/* 313 200 0 */
-/* 313 200 10 */
-/* 300 200 10 */
 /* Delay between GO signal and SFD
  * Measured 153us between GO and preamble. Add 5 bytes (preamble + SFD) air time: 153+5*32 = 313 */
-//#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313)) BRA
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(315))
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(250)) //313
 /* Delay between GO signal and start listening
  * Measured 104us: between GO signal and start listening */
-//#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
-#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(200)) // BRA
-//#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
+#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
 /* Delay between the SFD finishes arriving and it is detected in software */
-#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(10))
+#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(20))
 
 #if NETSTACK_CONF_MAC==tschmac_driver
 #define WITH_SEND_CCA 0
@@ -110,10 +104,17 @@ rtimer_clock_t rtimer_arch_now();
     ledtimer_yellow = 1000;leds_on(LEDS_YELLOW); } while(0);
 
 #define __TSCH_DEBUG_SLOT_START() do { \
-    ledtimer_red = 1000;leds_on(LEDS_RED); } while(0);
+  ledtimer_red = 1000;leds_on(LEDS_RED); } while(0);
+
+#define __TSCH_DEBUG_SLOT_START() do { \
+  ledtimer_red = 1000;leds_on(LEDS_RED); } while(0);
+
+#define TSCH_DEBUG_SLOT_START() do{ PORTD |= (1<<PD6); } while(0);
 
 #define __TSCH_DEBUG_SLOT_END() do { \
     ledtimer_yellow = 1000;leds_on(LEDS_YELLOW); } while(0);
+
+#define TSCH_DEBUG_SLOT_END() do{ PORTD &= ~(1<<PD6); } while(0);
 
 #define TSCH_CLOCK() do{ PORTD ^= (1<<PD6); } while(0);
 #define TSCH_CLOCK_HI() do{ PORTD |= (1<<PD6); } while(0);
@@ -242,7 +243,9 @@ typedef unsigned short uip_stats_t;
 /* TX routine does automatic cca and optional backoffs */
 #define RDC_CONF_HARDWARE_CSMA   1
 /* Allow MCU sleeping between channel checks */
+#ifndef RDC_CONF_MCU_SLEEP   
 #define RDC_CONF_MCU_SLEEP       1
+#endif
 
 #if NETSTACK_CONF_WITH_IPV6
 #define LINKADDR_CONF_SIZE        8
@@ -339,7 +342,11 @@ typedef unsigned short uip_stats_t;
 
 /* A 0 here means non-extended mode; 1 means extended mode with no retry, >1 for retrys */
 /* Contikimac strobes on its own, but hardware retries are faster */
+#if NETSTACK_CONF_MAC==tschmac_driver
+#define RF230_CONF_FRAME_RETRIES  0
+#else
 #define RF230_CONF_FRAME_RETRIES  1
+#endif
 /* Long csma backoffs will compromise radio cycling; set to 0 for 1 csma */
 #define RF230_CONF_CSMA_RETRIES   0
 #define SICSLOWPAN_CONF_FRAG      1

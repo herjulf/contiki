@@ -419,7 +419,6 @@ set_frame_filtering(bool i)
   if(i)
     hal_subregister_write(SR_AACK_PROM_MODE, 0);
   else {
-    ledtimer_red = 1000;leds_on(LEDS_RED);
     hal_subregister_write(SR_AACK_PROM_MODE, 1);
   }
 }
@@ -1261,7 +1260,7 @@ void rf230_warm_reset(void) {
  // hal_register_write(CSMA_SEED_1,42 );
 
   /* CCA Mode Mode 1=Energy above threshold  2=Carrier sense only  3=Both 0=Either (RF231 only) */
-//hal_subregister_write(SR_CCA_MODE,1);  //1 is the power-on default
+  //hal_subregister_write(SR_CCA_MODE,1);  //1 is the power-on default
 
   /* Carrier sense threshold (not implemented in RF230 or RF231) */
 // hal_subregister_write(SR_CCA_CS_THRES,1);
