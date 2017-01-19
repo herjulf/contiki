@@ -69,7 +69,7 @@
 #include "net/netstack.h"
 
 /* Timestamps have not been tested */
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
 #include "net/rime/timesynch.h"
 #define TIMESTAMP_LEN 3
 #else /* RF230_CONF_TIMESTAMPS */
@@ -199,7 +199,7 @@ extern uint8_t debugflowsize,debugflow[DEBUGFLOWSIZE];
 #endif
 
 /* XXX hack: these will be made as Chameleon packet attributes */
-#if RF230_CONF_TIMESTAMPS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
 rtimer_clock_t rf230_time_of_arrival, rf230_time_of_departure;
 
 int rf230_authority_level_of_sender;
@@ -2061,7 +2061,7 @@ rf230_read(void *buf, unsigned short bufsize)
 
     RIMESTATS_ADD(rx);
 
-#if RF230_CONF_TIMESTAMPS_FIXTHIS
+#if RF230_CONF_TIMESTAMPS_NOTNOW
     rf230_time_of_departure =
       t.time +
       setup_time_for_transmission +
