@@ -76,7 +76,7 @@ rtimer_clock_t rtimer_arch_now();
 
 /* Delay between GO signal and SFD
  * Measured 153us between GO and preamble. Add 5 bytes (preamble + SFD) air time: 153+5*32 = 313 */
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(250)) //313
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(400)) //313
 /* Delay between GO signal and start listening
  * Measured 104us: between GO signal and start listening */
 #define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
