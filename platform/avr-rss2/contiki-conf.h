@@ -76,12 +76,12 @@ rtimer_clock_t rtimer_arch_now();
 
 /* Delay between GO signal and SFD
  * Measured 153us between GO and preamble. Add 5 bytes (preamble + SFD) air time: 153+5*32 = 313 */
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(400)) //313
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313)) //313
 /* Delay between GO signal and start listening
  * Measured 104us: between GO signal and start listening */
-#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(104))
+#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(204))
 /* Delay between the SFD finishes arriving and it is detected in software */
-#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(20))
+#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(40)) //40
 
 #if NETSTACK_CONF_MAC==tschmac_driver
 #define WITH_SEND_CCA 0
@@ -191,6 +191,8 @@ void clock_adjust_ticks(clock_time_t howmany);
 /* RSS2 boards has a 32768Hz on TIMER2 */
 #define AVR_CONF_USE32KCRYSTAL 1
 #define SLIP_PORT RS232_PORT_0
+
+#define RS232_CONF_TX_INTERRUPTS 1
 
 /* Pre-allocated memory for loadable modules heap space (in bytes)*/
 /* Default is 4096. Currently used only when elfloader is present. Not tested on Raven */
