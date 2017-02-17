@@ -261,14 +261,7 @@ uint32_t longhowlong;
 #endif
     cli();
 	watchdog_stop();
-	if(poll_mode)
-#if NETSTACK_CONF_MAC==tschmac_driver
-	  set_sleep_mode(SLEEP_MODE_IDLE);
-#else
-	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
-#endif
-	else 
-	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
 
 #if NETSTACK_CONF_MAC!=tschmac_driver
 /* Set TIMER2 clock asynchronus from external source, CTC mode */
@@ -347,7 +340,7 @@ uint32_t longhowlong;
 /* Adjust clock.c for the time spent sleeping */
 	longhowlong=CLOCK_CONF_SECOND;
 	longhowlong*=howlong;
-    clock_adjust_ticks(longhowlong/RTIMER_ARCH_SECOND);
+	///clock_adjust_ticks(longhowlong/RTIMER_ARCH_SECOND);
 
 #endif /* NETSTACK_CONF_MAC!=tschmac_driver */
 }

@@ -332,7 +332,7 @@ ISR(AVR_OUTPUT_COMPARE_INT)
 #else
   if(count%CLOCK_SECOND==0) {
 #endif
-    seconds++;
+    /////RO seconds++;
 
 #if RADIO_CONF_CALIBRATE_INTERVAL
    /* Force a radio PLL frequency calibration every 256 seconds */
