@@ -55,10 +55,10 @@
 #endif
 
 
-#if 0
+#if 1
 /* Platform typedefs */
 typedef uint32_t clock_time_t;
-typedef uint32_t uip_stats_t;
+//typedef uint32_t uip_stats_t;
 
 /* Clock (time) comparison macro */
 #define CLOCK_LT(a, b)  ((signed long)((a) - (b)) < 0)
@@ -178,7 +178,7 @@ rtimer_clock_t rtimer_arch_now();
 /* Clock ticks per second */
 
 #define CLOCK_CONF_SECOND 128
-typedef unsigned long clock_time_t;
+////typedef unsigned long clock_time_t;
 #define CLOCK_LT(a, b)  ((signed long)((a) - (b)) < 0)
 #define INFINITE_TIME 0xffffffff
 /* These routines are not part of the contiki core but can be enabled in cpu/avr/clock.c */

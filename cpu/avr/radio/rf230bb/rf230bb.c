@@ -1782,7 +1782,7 @@ ISR(SCNT_OVFL_vect)
   //leds_on(LEDS_YELLOW);
 }
 
-#define FOO  1000000/(320*2*16) /* 97 */
+#define FOO  1000000/(320*16) /* 97 */
 extern volatile unsigned long seconds;
 
 static uint8_t cmp1_cnt;
@@ -1795,18 +1795,23 @@ ISR(SCNT_CMP1_vect)
     cmp1_cnt = 0;
     leds_toggle(LEDS_RED);
     TSCH_CLOCK();
-    seconds;
+    seconds++;
   }
   i += 320l; /* 10.24 mS */
   macsc_write32( (volatile uint8_t *) RG_SCOCR1HH, i); 
  }
 
+void
+rtimer_arch_schedule(rtimer_clock_t t)
+{
+  macsc_write32( (volatile uint8_t *) RG_SCOCR2HH, t); 
+}
+
 ISR(SCNT_CMP2_vect)
 {
-  uint32_t i =  get_symbol_counter();
   leds_toggle(LEDS_YELLOW);
-  i += 3200l; /* 102.40 mS */
-  macsc_write32( (volatile uint8_t *) RG_SCOCR2HH, i); 
+  watchdog_periodic();
+  rtimer_run_next();
 }
 
 ISR(SCNT_CMP3_vect)

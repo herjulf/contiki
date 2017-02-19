@@ -51,8 +51,8 @@
  */
 #ifndef RTIMER_ARCH_PRESCALER
 //#define RTIMER_ARCH_PRESCALER 1024UL
-#define RTIMER_ARCH_PRESCALER 64UL
-//#define RTIMER_ARCH_PRESCALER 256UL
+//#define RTIMER_ARCH_PRESCALER 64UL
+#define RTIMER_ARCH_PRESCALER 256UL
 //#define RTIMER_ARCH_PRESCALER 8UL
 #endif
 #if RTIMER_ARCH_PRESCALER
@@ -60,6 +60,8 @@
 #else
 #define RTIMER_ARCH_SECOND 0
 #endif
+
+//#define RTIMER_ARCH_SECOND 8192 //16000
 
 /* Do the math in 32bits to save precision.
  * Round to nearest integer rather than truncate. */
@@ -75,14 +77,6 @@
    Intended only for positive values of T. */
 #define RTIMERTICKS_TO_US_64(T)  ((uint32_t)(((uint64_t)(T) * 1000000 + ((RTIMER_ARCH_SECOND) / 2)) / (RTIMER_ARCH_SECOND)))
 
-#ifdef TCNT3
-#define _rtimer_arch_now() (TCNT3)
-#elif RTIMER_ARCH_PRESCALER
-#define rtimer_arch_now() (TCNT1)
-#else
-#define rtimer_arch_now() (0)
-#endif
-
-uint16_t rtimer_arch_now(void);
+rtimer_clock_t rtimer_arch_now(void);
 void rtimer_arch_sleep(rtimer_clock_t howlong);
 #endif /* RTIMER_ARCH_H_ */

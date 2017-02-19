@@ -57,7 +57,7 @@ rt_callback(struct rtimer *t, void *ptr)
 {
   rt_now = RTIMER_NOW();
   ct = clock_time();
-  printf("Task called at %u (clock = %lu)\n", rt_now, ct);
+  printf("Task called at %lu (clock = %lu)\n", rt_now, ct);
 }
 #endif
 
@@ -108,7 +108,7 @@ PROCESS_THREAD(clock_test_process, ev, data)
     }
     end_count = RTIMER_NOW();
     diff = end_count - start_count;
-    printf("Requested: %u usec, Real: %u rtimer ticks = ~%lu us\n",
+    printf("Requested: %u usec, Real: %lu rtimer ticks = ~%lu us\n",
            10000 * i, diff, diff * RTIMER_RES);
     i++;
   }
@@ -123,7 +123,7 @@ PROCESS_THREAD(clock_test_process, ev, data)
     ct = clock_time();
     rt_now = RTIMER_NOW();
     rt_for = rt_now + RTIMER_SECOND;
-    printf("Now=%u (clock = %lu) - For=%u\n", rt_now, ct, rt_for);
+    printf("Now=%lu (clock = %lu) - For=%lu\n", rt_now, ct, rt_for);
     if(rtimer_set(&rt, rt_for, 1, (rtimer_callback_t) rt_callback, NULL) !=
        RTIMER_OK) {
       printf("Error setting\n");
