@@ -264,6 +264,10 @@ initialize(void)
   /* etimers must be started before ctimer_init */
   process_start(&etimer_process, NULL);
   ctimer_init();
+ /* After process start */
+
+  serial_line_init();
+  rs232_set_input(RS232_PORT_0, serial_line_input_byte);
 
   /* Start radio and radio receive process */
   NETSTACK_RADIO.init();
