@@ -108,12 +108,12 @@ rtimer_arch_init(void)
   SREG = sreg;
 }
 
+extern uint32_t get_symbol_counter();
+
 rtimer_clock_t
 rtimer_arch_now(void) 
 {
-  rtimer_clock_t t;
-  t = get_symbol_counter();
-  return t;
+  return (rtimer_clock_t) get_symbol_counter();
 }
 
 
