@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, Swedish Institute of Computer Science.
+ * Copyright (c) 2017, Swedish Institute of Computer Science.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,33 +35,11 @@
 
 #include <avr/interrupt.h>
 
-/* Nominal ARCH_SECOND is F_CPU/prescaler, e.g. 8000000/1024 = 7812
- * Other prescaler values (1, 8, 64, 256) will give greater precision
- * with shorter maximum intervals.
- * Setting RTIMER_ARCH_PRESCALER to 0 will leave Timers alone.
- * rtimer_arch_now() will then return 0, likely hanging the cpu if used.
- * Timer1 is used if Timer3 is not available.
- *
- * Note the rtimer tick to clock tick conversion will be nominally correct only
- * when the same oscillator is used for both clocks.
- * When an external 32768 watch crystal is used for clock ticks my raven CPU
- * oscillator is 1% slow, 32768 counts on crystal = ~7738 rtimer ticks.
- * For more accuracy define F_CPU to 0x800000 and optionally phase lock CPU
- * clock to 32768 crystal. This gives RTIMER_ARCH_SECOND = 8192.
- */
-#ifndef RTIMER_ARCH_PRESCALER
-//#define RTIMER_ARCH_PRESCALER 1024UL
-//#define RTIMER_ARCH_PRESCALER 64UL
-#define RTIMER_ARCH_PRESCALER 256UL
-//#define RTIMER_ARCH_PRESCALER 8UL
-#endif
-#if RTIMER_ARCH_PRESCALER
-#define RTIMER_ARCH_SECOND (F_CPU/RTIMER_ARCH_PRESCALER)
-#else
-#define RTIMER_ARCH_SECOND 0
-#endif
+/* On a 16MHz CPU gives this 16 us which the resolution 
+ * of the Mac Symbol Counter */
 
-//#define RTIMER_ARCH_SECOND 8192 //16000
+#define RTIMER_ARCH_PRESCALER 256UL
+#define RTIMER_ARCH_SECOND (F_CPU/RTIMER_ARCH_PRESCALER)
 
 /* Do the math in 32bits to save precision.
  * Round to nearest integer rather than truncate. */

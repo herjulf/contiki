@@ -340,6 +340,11 @@ uint32_t get_symbol_counter(void)
 		       (volatile uint8_t *) RG_SCCNTLL);
 }
 
+void sync_symbol_counter(void)
+{
+  while( hal_subregister_read(SR_SCBSY));
+}
+
 uint32_t get_ocr1_counter(void) 
 {
   while( hal_subregister_read(SR_SCBSY)); 
@@ -1149,7 +1154,7 @@ rf230_init_mac_symbol_counter(void)
 
   /* Prescaler */
   //hal_subregister_write(SR_SCCR1_CLKDIV, SCCKDIV_4M);
-  hal_subregister_write(SR_SCCR1_CLKDIV, SCCKDIV_62_5k);
+  //hal_subregister_write(SR_SCCR1_CLKDIV, SCCKDIV_62_5k);
   //hal_subregister_write(SR_SCCR1_SCBTSM , 1);
 
   /* ocr1 */ 
@@ -1171,6 +1176,7 @@ rf230_init_mac_symbol_counter(void)
    //i |= 0x08; // Counter overflow mask
   i |= 0x01; // Compare 1 counter mask
   i |= 0x02; // Compare 2 counter mask
+  i |= 0x04; // Compare 3 counter mask
   //i |= 0x04; // Compare 3 counter mask
   hal_subregister_write(SR_SCIRQM, i);
 }
@@ -1774,26 +1780,25 @@ ISR(TRX24_RX_END_vect)
 /* PLL has locked, either from a transition out of TRX_OFF or a channel change while on */
 ISR(TRX24_PLL_LOCK_vect)
 {
-  //leds_toggle(LEDS_YELLOW);
 }
 
 ISR(SCNT_OVFL_vect)
 {
-  //leds_on(LEDS_YELLOW);
 }
 
-#define FOO  1000000/(320*16) /* 97 */
+#define SEC_CNT  1000000/(320*16) /* 97 */
+
 extern volatile unsigned long seconds;
 
 static uint8_t cmp1_cnt;
 
 ISR(SCNT_CMP1_vect)
 {
-  uint32_t i =  get_symbol_counter();
+  uint32_t i = get_symbol_counter();
 
-  if(cmp1_cnt++ == FOO) {
+  if(cmp1_cnt++ == SEC_CNT) {
     cmp1_cnt = 0;
-    leds_toggle(LEDS_RED);
+    leds_on(LEDS_RED);
     TSCH_CLOCK();
     seconds++;
   }
@@ -1809,7 +1814,6 @@ rtimer_arch_schedule(rtimer_clock_t t)
 
 ISR(SCNT_CMP2_vect)
 {
-  leds_toggle(LEDS_YELLOW);
   watchdog_periodic();
   rtimer_run_next();
 }
