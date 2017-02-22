@@ -1799,7 +1799,7 @@ ISR(SCNT_CMP1_vect)
     cmp1_cnt = 0;
     leds_on(LEDS_RED);
     TSCH_CLOCK();
-    seconds++;
+    //seconds++;
   }
   i += 320l; /* 10.24 mS */
   msc_write32( (volatile uint8_t *) RG_SCOCR1HH, i); 

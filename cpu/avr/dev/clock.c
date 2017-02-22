@@ -286,7 +286,7 @@ clock_delay_msec(uint16_t howlong)
   * Leap ticks or seconds can (rarely) be introduced if the ISR is not blocked.
  */
 void
-clock_adjust_ticks(clock_time_t howmany)
+clock_adjust_ticks_old(clock_time_t howmany)
 {
   uint8_t sreg = SREG;cli();
   count  += howmany;
@@ -332,7 +332,7 @@ ISR(AVR_OUTPUT_COMPARE_INT)
 #else
   if(count%CLOCK_SECOND==0) {
 #endif
-    /////RO seconds++;
+    seconds++;
 
 #if RADIO_CONF_CALIBRATE_INTERVAL
    /* Force a radio PLL frequency calibration every 256 seconds */
