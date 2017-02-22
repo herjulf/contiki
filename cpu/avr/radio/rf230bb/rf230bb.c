@@ -1814,6 +1814,7 @@ rtimer_arch_schedule(rtimer_clock_t t)
 ISR(SCNT_CMP2_vect)
 {
   watchdog_periodic();
+  sei(); /* Allow nested interrupts */
   rtimer_run_next();
 }
 
