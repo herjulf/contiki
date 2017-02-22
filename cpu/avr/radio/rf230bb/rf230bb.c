@@ -271,7 +271,7 @@ foo(int a)
 }
 
 
-static inline uint32_t macsc_read32(volatile uint8_t *hh,
+static inline uint32_t msc_read32(volatile uint8_t *hh,
 		volatile uint8_t *hl,
 		volatile uint8_t *lh,
 		volatile uint8_t *ll)
@@ -290,7 +290,7 @@ static inline uint32_t macsc_read32(volatile uint8_t *hh,
 	return x.rv;
 }
 
-static uint32_t macsc_read32_1(volatile uint8_t *hh)
+static uint32_t msc_read32_1(volatile uint8_t *hh)
 {
   union {
     uint8_t a[4];
@@ -304,7 +304,7 @@ static uint32_t macsc_read32_1(volatile uint8_t *hh)
   return x.rv;
 }
 
-void macsc_write32(volatile uint8_t *hh, uint32_t val)
+void msc_write32(volatile uint8_t *hh, uint32_t val)
 {
   union { 
     uint8_t a[4]; 
@@ -317,55 +317,55 @@ void macsc_write32(volatile uint8_t *hh, uint32_t val)
   *(hh-3)  = x.a[0]; 
 }
 
-uint32_t get_SFD_timestamp(void) 
+uint32_t msc_get_sfd_timestamp(void) 
 {
-  return macsc_read32( (volatile uint8_t *) RG_SCTSRHH, 
+  return msc_read32( (volatile uint8_t *) RG_SCTSRHH, 
 		       (volatile uint8_t *) RG_SCTSRHL, 
 		       (volatile uint8_t *) RG_SCTSRLH, 
 		       (volatile uint8_t *) RG_SCTSRLL);
 }
 
-uint32_t get_symbol_counter_1(void) 
+uint32_t msc_get_counter_1(void) 
 {
-  return macsc_read32_1( (volatile uint8_t *) RG_SCCNTHH);
+  return msc_read32_1( (volatile uint8_t *) RG_SCCNTHH);
 }
 
-uint32_t get_symbol_counter(void) 
+uint32_t msc_get_counter(void) 
 {
   while( hal_subregister_read(SR_SCBSY)); 
 
-  return macsc_read32( (volatile uint8_t *) RG_SCCNTHH, 
+  return msc_read32( (volatile uint8_t *) RG_SCCNTHH, 
 		       (volatile uint8_t *) RG_SCCNTHL, 
 		       (volatile uint8_t *) RG_SCCNTLH, 
 		       (volatile uint8_t *) RG_SCCNTLL);
 }
 
-void sync_symbol_counter(void)
+void msc_sync_counter(void)
 {
   while( hal_subregister_read(SR_SCBSY));
 }
 
-uint32_t get_ocr1_counter(void) 
+uint32_t msc_get_ocr1_counter(void) 
 {
   while( hal_subregister_read(SR_SCBSY)); 
 
-  return macsc_read32( (volatile uint8_t *) RG_SCOCR1HH, 
+  return msc_read32( (volatile uint8_t *) RG_SCOCR1HH, 
 		       (volatile uint8_t *) RG_SCOCR1HL, 
 		       (volatile uint8_t *) RG_SCOCR1LH, 
 		       (volatile uint8_t *) RG_SCOCR1LL);
 }
 
-uint32_t get_ocr2_counter(void) 
+uint32_t msc_get_ocr2_counter(void) 
 {
-  return macsc_read32( (volatile uint8_t *) RG_SCOCR2HH, 
+  return msc_read32( (volatile uint8_t *) RG_SCOCR2HH, 
 		       (volatile uint8_t *) RG_SCOCR2HL, 
 		       (volatile uint8_t *) RG_SCOCR2LH, 
 		       (volatile uint8_t *) RG_SCOCR2LL);
 }
 
-uint32_t get_ocr3_counter(void) 
+uint32_t msc_get_ocr3_counter(void) 
 {
-  return macsc_read32( (volatile uint8_t *) RG_SCOCR3HH, 
+  return msc_read32( (volatile uint8_t *) RG_SCOCR3HH, 
 		       (volatile uint8_t *) RG_SCOCR3HL, 
 		       (volatile uint8_t *) RG_SCOCR3LH, 
 		       (volatile uint8_t *) RG_SCOCR3LL);
@@ -379,9 +379,8 @@ uint32_t get_ocr3_counter(void)
 static rtimer_clock_t
 get_rx_packet_timestamp(void)
 {
-  /* Save SFD timestamp, converted from radio timer to RTIMER */
-  //last_packet_timestamp = RTIMER_NOW() - RADIO_TO_RTIMER(get_symbol_counter() - get_SFD_timestamp() - 1);
-  //last_packet_timestamp = RTIMER_NOW() - US_TO_RTIMERTICKS((get_symbol_counter() - get_SFD_timestamp() - 1) * 16);
+  /* Save SFD timestamp */
+
   /* The remaining measured error is typically in range 0..16 usec.
    * Center it around zero, in the -8..+8 usec range. */
   last_packet_timestamp = RTIMER_NOW();
@@ -1131,7 +1130,7 @@ calibrate_rc_osc_32k(void)
 /*---------------------------------------------------------------------------*/
 
 static void
-rf230_init_mac_symbol_counter(void)
+msc_init(void)
 {
   uint8_t i;
 
@@ -1158,9 +1157,9 @@ rf230_init_mac_symbol_counter(void)
   //hal_subregister_write(SR_SCCR1_SCBTSM , 1);
 
   /* ocr1 */ 
-  macsc_write32( (volatile uint8_t *) RG_SCOCR1HH, 160); 
+  msc_write32( (volatile uint8_t *) RG_SCOCR1HH, 160); 
   /* ocr2 */ 
-  macsc_write32( (volatile uint8_t *) RG_SCOCR2HH, 160); 
+  msc_write32( (volatile uint8_t *) RG_SCOCR2HH, 160); 
 #ifdef BACKOFF
   hal_subregister_write(SR_SCCR1_SCENBO, 1);  // Enable Back off counter
 #endif
@@ -1234,7 +1233,7 @@ rf230_init(void)
   PRINTF("rf230: Version %u, ID %u\n",tvers,tmanu);
   
   rf230_warm_reset();
-  rf230_init_mac_symbol_counter();
+  msc_init();
  
  /* Start the packet receive process */
   process_start(&rf230_process, NULL);
@@ -1794,7 +1793,7 @@ static uint8_t cmp1_cnt;
 
 ISR(SCNT_CMP1_vect)
 {
-  uint32_t i = get_symbol_counter();
+  uint32_t i = msc_get_counter();
 
   if(cmp1_cnt++ == SEC_CNT) {
     cmp1_cnt = 0;
@@ -1803,13 +1802,13 @@ ISR(SCNT_CMP1_vect)
     seconds++;
   }
   i += 320l; /* 10.24 mS */
-  macsc_write32( (volatile uint8_t *) RG_SCOCR1HH, i); 
+  msc_write32( (volatile uint8_t *) RG_SCOCR1HH, i); 
  }
 
 void
 rtimer_arch_schedule(rtimer_clock_t t)
 {
-  macsc_write32( (volatile uint8_t *) RG_SCOCR2HH, t); 
+  msc_write32( (volatile uint8_t *) RG_SCOCR2HH, t); 
 }
 
 ISR(SCNT_CMP2_vect)

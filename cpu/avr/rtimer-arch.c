@@ -33,12 +33,10 @@
 /**
  * \file
  *         AVR-specific rtimer code
- *         Using 32bit Symbol Counter 
+ *         Using 32bit MAC Symbol Counter 
  * \author
  *         Robert Olsson
  */
-
-/* OBS: 8 seconds maximum time! */
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -50,8 +48,8 @@
 #include "sys/rtimer.h"
 #include "rtimer-arch.h"
 
-extern uint32_t get_symbol_counter();
-extern uint32_t sync_symbol_counter();
+extern uint32_t msc_get_counter();
+extern uint32_t msc_sync();
 
 void
 rtimer_arch_init(void)
@@ -66,7 +64,7 @@ rtimer_arch_init(void)
 rtimer_clock_t
 rtimer_arch_now(void) 
 {
-  return (rtimer_clock_t) get_symbol_counter();
+  return (rtimer_clock_t) msc_get_counter();
 }
 
 ISR (TIMER3_COMPA_vect) 
@@ -79,7 +77,7 @@ rtimer_arch_sleep(rtimer_clock_t howlong)
   cli();
   watchdog_stop();
   set_sleep_mode(SLEEP_MODE_PWR_SAVE);
-  sync_symbol_counter();
+  msc_sync(); /* Needed before sleep */
 
   sei();
   sleep_mode();
