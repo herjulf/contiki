@@ -263,7 +263,8 @@ uint32_t longhowlong;
 	watchdog_stop();
 	if(poll_mode)
 #if NETSTACK_CONF_MAC==tschmac_driver
-	  set_sleep_mode(SLEEP_MODE_IDLE);
+	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+	//set_sleep_mode(SLEEP_MODE_IDLE);
 #else
 	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
 #endif
@@ -275,7 +276,7 @@ uint32_t longhowlong;
     ASSR |= (1 << AS2);
     TCCR2A =(1<<WGM21);
 /* Set prescaler and TIMER2 output compare register */
-#if RTIMER_ARCH_PRESCALER==1024    //Prescale by 1024 -   32 ticks/sec, 8 seconds max sleep
+#if 1 // RTIMER_ARCH_PRESCALER==1024    //Prescale by 1024 -   32 ticks/sec, 8 seconds max sleep
     TCCR2B =((1<<CS22)|(1<<CS21)|(1<<CS20));
     longhowlong=howlong*32UL; 
 #elif RTIMER_ARCH_PRESCALER==256  // Prescale by 256 -  128 ticks/sec, 2 seconds max sleep
