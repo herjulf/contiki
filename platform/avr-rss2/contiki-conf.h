@@ -89,7 +89,7 @@ rtimer_clock_t rtimer_arch_now();
 #define RF230_CONF_AUTORETRIES 0
 #endif
 
-#define TSCH_DEBUG 1
+#define TSCH_DEBUG 0
 
 #if TSCH_DEBUG
 #define TSCH_DEBUG_INIT() do {DDRD |= (1<<PD6);} while(0);
@@ -119,6 +119,10 @@ rtimer_clock_t rtimer_arch_now();
 #define TSCH_CLOCK() do{ PORTD ^= (1<<PD6); } while(0);
 #define TSCH_CLOCK_HI() do{ PORTD |= (1<<PD6); } while(0);
 #define TSCH_CLOCK_LO() do{ PORTD &= ~(1<<PD6); } while(0);
+
+#else
+
+#define TSCH_CLOCK()
 
 #endif /* TSCH_DEBUG */
 
