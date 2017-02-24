@@ -588,13 +588,18 @@ PT_THREAD(tsch_tx_slot(struct pt *pt, struct rtimer *t))
               NETSTACK_RADIO.get_value(RADIO_PARAM_RX_MODE, &radio_rx_mode);
               NETSTACK_RADIO.set_value(RADIO_PARAM_RX_MODE, radio_rx_mode & (~RADIO_RX_MODE_ADDRESS_FILTER));
 #endif /* TSCH_HW_FRAME_FILTERING */
+
+              /* flush the old ACK, if any */
+              NETSTACK_RADIO.read((void *)ackbuf, sizeof(ackbuf));
+              sei(); /* enable interrupts */
+              
               /* Unicast: wait for ack after tx: sleep until ack time */
               TSCH_SCHEDULE_AND_YIELD(pt, t, current_slot_start,
                   tsch_timing[tsch_ts_tx_offset] + tx_duration + tsch_timing[tsch_ts_rx_ack_delay] - RADIO_DELAY_BEFORE_RX, "TxBeforeAck");
               TSCH_DEBUG_TX_EVENT();
-              tsch_radio_on(TSCH_RADIO_CMD_ON_WITHIN_TIMESLOT);
 
               sei(); /* enable interrupts */
+              tsch_radio_on(TSCH_RADIO_CMD_ON_WITHIN_TIMESLOT);
 
               /* Wait for ACK to come */
               BUSYWAIT_UNTIL_ABS(NETSTACK_RADIO.receiving_packet(),
@@ -761,11 +766,16 @@ PT_THREAD(tsch_rx_slot(struct pt *pt, struct rtimer *t))
 
     current_input = &input_array[input_index];
 
+    /* flush the old packet, if any */
+    NETSTACK_RADIO.read((void *)current_input->payload, TSCH_PACKET_MAX_LEN);
+
     sei(); /* enable interrupts */
 
     /* Wait before starting to listen */
     TSCH_SCHEDULE_AND_YIELD(pt, t, current_slot_start, tsch_timing[tsch_ts_rx_offset] - RADIO_DELAY_BEFORE_RX, "RxBeforeListen");
     TSCH_DEBUG_RX_EVENT();
+
+    sei(); /* enable interrupts */
 
     /* Start radio for at least guard time */
     tsch_radio_on(TSCH_RADIO_CMD_ON_WITHIN_TIMESLOT);
