@@ -192,7 +192,7 @@ void clock_adjust_ticks(clock_time_t howmany);
 #define AVR_CONF_USE32KCRYSTAL 1
 #define SLIP_PORT RS232_PORT_0
 
-#define RS232_CONF_TX_INTERRUPTS 1
+/* #define RS232_CONF_TX_INTERRUPTS 1 */
 
 /* Pre-allocated memory for loadable modules heap space (in bytes)*/
 /* Default is 4096. Currently used only when elfloader is present. Not tested on Raven */
@@ -300,7 +300,8 @@ typedef unsigned short uip_stats_t;
 /* Number of csma retry attempts 0-5 in extended tx mode (7 does immediate tx with no csma) */
 #define RF230_CONF_CSMA_RETRIES   5
 /* Default is one RAM buffer for received packets. More than one may benefit multiple TCP connections or ports */
-#define RF230_CONF_RX_BUFFERS     3
+/* #define RF230_CONF_RX_BUFFERS     3 */
+#define RF230_CONF_RX_BUFFERS     1 /* for TSCH never need more */
 #define SICSLOWPAN_CONF_FRAG      1
 /* Most browsers reissue GETs after 3 seconds which stops fragment reassembly so a longer MAXAGE does no good */
 #define SICSLOWPAN_CONF_MAXAGE    3
