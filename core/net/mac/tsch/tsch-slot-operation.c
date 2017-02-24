@@ -593,6 +593,9 @@ PT_THREAD(tsch_tx_slot(struct pt *pt, struct rtimer *t))
                   tsch_timing[tsch_ts_tx_offset] + tx_duration + tsch_timing[tsch_ts_rx_ack_delay] - RADIO_DELAY_BEFORE_RX, "TxBeforeAck");
               TSCH_DEBUG_TX_EVENT();
               tsch_radio_on(TSCH_RADIO_CMD_ON_WITHIN_TIMESLOT);
+
+              sei(); /* enable interrupts */
+
               /* Wait for ACK to come */
               BUSYWAIT_UNTIL_ABS(NETSTACK_RADIO.receiving_packet(),
                   tx_start_time, tx_duration + tsch_timing[tsch_ts_rx_ack_delay] + tsch_timing[tsch_ts_ack_wait] + RADIO_DELAY_BEFORE_DETECT);
@@ -757,6 +760,8 @@ PT_THREAD(tsch_rx_slot(struct pt *pt, struct rtimer *t))
     rx_start_time = expected_rx_time;
 
     current_input = &input_array[input_index];
+
+    sei(); /* enable interrupts */
 
     /* Wait before starting to listen */
     TSCH_SCHEDULE_AND_YIELD(pt, t, current_slot_start, tsch_timing[tsch_ts_rx_offset] - RADIO_DELAY_BEFORE_RX, "RxBeforeListen");
