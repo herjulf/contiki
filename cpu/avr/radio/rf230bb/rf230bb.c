@@ -1737,18 +1737,28 @@ rf230_set_pan_addr(unsigned pan,
 
 ISR(TRX24_RX_START_vect)
 {
+  if(rf230_pending) {
+    /* don't save packet timestamp if a packet is already present */
+    return;
+  }
 /* Save RSSI for this packet if not in extended mode, scaling to 1dB resolution */
 #if !RF230_CONF_AUTOACK
     rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
 #endif
     get_rx_packet_timestamp();
-    if(!poll_mode) 
+    if(!poll_mode) {
       rf230_interrupt(2);
+    }
 }
 
 /* Received packet interrupt */
 ISR(TRX24_RX_END_vect)
 {
+  if(rf230_pending) {
+    /* don't read a packet if one is already present */
+    return;
+  }
+        
 /* Get the rssi from ED if extended mode */
 #if RF230_CONF_AUTOACK
 	rf230_last_rssi=hal_register_read(RG_PHY_ED_LEVEL);
