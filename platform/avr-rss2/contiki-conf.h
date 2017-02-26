@@ -79,7 +79,9 @@ rtimer_clock_t rtimer_arch_now();
 #define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(293)) //313
 /* Delay between GO signal and start listening
  * Measured 104us: between GO signal and start listening */
-#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(400)) //204
+/*#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(400)) //204 */
+/* this is with "radio on during slot" enabled */
+#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(10))
 /* Delay between the SFD finishes arriving and it is detected in software */
 #define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(40)) //40
 
