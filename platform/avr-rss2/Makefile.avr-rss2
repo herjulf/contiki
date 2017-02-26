@@ -57,5 +57,37 @@ include $(CONTIKIAVR)/radio/Makefile.radio
 
 MODULES += core/net/mac core/net core/net/mac/sicslowmac core/net/mac/contikimac core/net/llsec 
 
+##############################################################
 
+# Check if we are running under Windows
+ifeq ($(HOST_OS),Windows)
+  USBDEVPREFIX=/dev/com
+  USBDEVBASENAME=COM
+  SERIALDUMP ?= $(CONTIKI)/tools/sky/serialdump-windows
+else
+ifeq ($(HOST_OS),Darwin)
+  USBDEVPREFIX=
+  USBDEVBASENAME=/dev/tty.usbserial-
+  SERIALDUMP ?= $(CONTIKI)/tools/sky/serialdump-macos
+else
+  # Else we assume Linux
+  USBDEVPREFIX=
+  USBDEVBASENAME=/dev/ttyUSB
+  SERIALDUMP ?= $(CONTIKI)/tools/sky/serialdump-linux
+endif
+endif
 
+MOTE ?= 0
+PORT ?= $(USBDEVBASENAME)$(MOTE)
+
+PROGRAMMER ?= avrdude
+
+MODEL ?= m256rfr2      # use m128rfa1 for the first generation boards
+BOOTLOADER ?= stk500v2 # use avr109 for the first generation boards
+
+%.upload: %.avr-rss2
+	$(PROGRAMMER) -p $(MODEL) -c $(BOOTLOADER) -P $(PORT) -b 38400 -e -U flash:w:$<
+
+UART_BAUDRATE ?= 19200
+login:
+	$(SERIALDUMP) -b$(UART_BAUDRATE) $(PORT)
