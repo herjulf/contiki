@@ -77,12 +77,22 @@ rtimer_arch_sleep(rtimer_clock_t howlong)
   cli();
   watchdog_stop();
   set_sleep_mode(SLEEP_MODE_PWR_SAVE);
-  msc_sync(); /* Needed before sleep */
+  msc_sync_counter(); /* Needed before sleep */
 
   sei();
   sleep_mode();
   watchdog_start();
 }
 
+ISR
+(INT0_vect)
+{
 
+  //#include "dev/leds.h"
 
+  //leds_on(LEDS_RED);
+
+  //EIMSK &= ~(1 << PCIE0);
+
+  //rtimer_run_next();
+}
