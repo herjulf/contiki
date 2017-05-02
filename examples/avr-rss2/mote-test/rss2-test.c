@@ -26,8 +26,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * This file is part of the Contiki operating system.
- *
  *
  * Author  : Robert Olsson robert@radio-sensors.com
  * Created : 2015-11-22
@@ -37,7 +35,7 @@
  * \file
  *         HW test application for RSS2 mote
  */
-#define VERSION       "1.0-2017-05-01"
+#define VERSION       "1.1-2017-05-02"
 
 #include <avr/eeprom.h>
 #include "contiki.h"
@@ -51,6 +49,7 @@
 #include "dev/temp_mcu-sensor.h"
 #include "dev/light-sensor.h"
 #include "dev/pulse-sensor.h"
+#include "dev/bme280/bme280-sensor.h"
 
 #define T_OW_TEMP0       (1<<0)
 #define T_OW_TEMP1       (1<<1)
@@ -62,13 +61,15 @@
 #define T_A2             (1<<7)
 #define T_LIGHT          (1<<8)
 #define T_EUI64          (1<<9)
-#define T_RTC            (1<<10)
+#define T_BME280         (1<<10)
+#define T_RTC            (1<<11)
 
 #define DEF_TEST 0
 volatile uint32_t test = DEF_TEST;  /* default test mask */
 uint32_t EEMEM ee_test = DEF_TEST;
 
-uint32_t test_mask =  (T_OW_TEMP0|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC);
+//uint32_t test_mask =  (T_OW_TEMP0|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC);
+uint32_t test_mask =  (T_OW_TEMP0|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC|T_BME280);
 
 struct {
   uint32_t cs;
@@ -89,9 +90,10 @@ void print_version(void)
 
 /*---------------------------------------------------------------------------*/
 PROCESS(rss2_test_process, "rss2 test process");
+PROCESS(programmable_power, "programmable power process");
 AUTOSTART_PROCESSES(&rss2_test_process);
 
-static struct etimer et;
+static struct etimer et, pp;
 extern uint16_t ledtimer_red, ledtimer_yellow;
 int ok;
 uint32_t cs1, cs2;
@@ -107,6 +109,19 @@ blink(voiD)
   if(test == test_mask) {
      printf("PASSED! LEDS FLASHING. STORED IN EEPROM\n");
      eeprom_write_block((void*) &test,     (void*)&ee_test, sizeof(uint32_t));
+  }
+}
+
+static void
+test_i2c(void)
+{
+
+  if(! (i2c_probed & I2C_AT24MAC)) {
+    printf("ERROR I2C EUI64 ADDR NOT FOUND\n");
+  }
+
+  if((test_mask & T_BME280) &&  ! (i2c_probed & I2C_BME280)) {
+    printf("ERROR I2C BME280 SENSOR NOT FOUND\n");
   }
 }
 
@@ -234,7 +249,7 @@ static int
 print_test_values(void)
 {
   if(test != test_mask) 
-    printf("TO TEST:");
+    printf("MISSING:");
 
   if((test & T_P0) == 0)
     printf(" P0");
@@ -262,6 +277,12 @@ print_test_values(void)
 
   if((test & T_A2) == 0)
     printf(" A2");
+
+  if((test & T_EUI64) == 0)
+    printf(" I2C-EUI64");
+
+  if((test & T_BME280) == 0)
+    printf(" I2C-BME280");
 
   if(test != test_mask) 
     printf("\n");
@@ -311,11 +332,25 @@ static void
 init_test(void)
 {
   init.cs = clock_seconds();
+
   init.v_in =  adc_read_v_in();
+
   init.a1 = adc_read_a1();
+  if(init.a1 != 0) 
+    printf("ERROR A1 NOT 0\n");
+
   init.a2 = adc_read_a2();
+  if(init.a1 != 0) 
+    printf("ERROR A1 NOT 0\n");
+
   init.p0 = pulse_sensor.value(0);
+  if(init.p0 != 0) 
+    printf("ERROR P0 NOT 0\n");
+
   init.p1 = pulse_sensor.value(1);
+  if(init.p1 != 0) 
+    printf("ERROR P1 NOT 0\n");
+
   init.light = light_sensor.value(0);
 }
 
@@ -356,7 +391,6 @@ PROCESS_THREAD(rss2_test_process, ev, data)
 {
   PROCESS_BEGIN();
 
-
   eeprom_read_block((void*) &utmp32,    (const void*)&ee_test, sizeof(test));
   if( utmp32 == 0xFFFFFFFF) {
     utmp32 = 0;
@@ -382,8 +416,15 @@ PROCESS_THREAD(rss2_test_process, ev, data)
   SENSORS_ACTIVATE(temp_mcu_sensor);
   SENSORS_ACTIVATE(light_sensor);
   SENSORS_ACTIVATE(pulse_sensor);
+
+  if( i2c_probed & I2C_BME280 ) {
+    SENSORS_ACTIVATE(bme280_sensor);
+  }
+
   leds_init(); 
   init_test();
+  test_i2c();
+  process_start(&programmable_power, NULL);
   read_values();
   test_values();
   
@@ -420,4 +461,26 @@ PROCESS_THREAD(rss2_test_process, ev, data)
   }
   PROCESS_END();
 }
-/*---------------------------------------------------------------------------*/
+
+PROCESS_THREAD(programmable_power, ev, data)
+{
+  PROCESS_BEGIN();
+
+  DDRE |= (1<<PWR_1);
+
+  etimer_reset(&pp);
+  etimer_set(&pp, CLOCK_SECOND/2);
+
+  while(1) {
+
+    PROCESS_WAIT_UNTIL(etimer_expired(&pp));
+    if(debug) 
+      printf("In programmable power\n");
+    
+    PORTE ^= (1<<PWR_1);
+
+    etimer_reset(&pp);
+    etimer_set(&pp, CLOCK_SECOND);
+  }
+  PROCESS_END();
+}
