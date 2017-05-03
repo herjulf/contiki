@@ -1,5 +1,8 @@
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 CONTIKI_PROJECT = rss2-test
+
+CONTIKI_SOURCEFILES += cli.c
+
 all: $(CONTIKI_PROJECT)
 
 # We use floating vars. Add library.
