@@ -44,6 +44,7 @@
 #include "adc.h"
 #include "i2c.h"
 #include "dev/leds.h"
+#include "dev/serial-line.h"
 #include "dev/battery-sensor.h"
 #include "dev/temp-sensor.h"
 #include "dev/temp_mcu-sensor.h"
@@ -65,11 +66,17 @@
 #define T_RTC            (1<<11)
 
 #define DEF_TEST 0
+
+extern void handle_serial_input(const char *line);
+
 volatile uint32_t test = DEF_TEST;  /* default test mask */
 uint32_t EEMEM ee_test = DEF_TEST;
 
-//uint32_t test_mask =  (T_OW_TEMP0|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC);
-uint32_t test_mask =  (T_OW_TEMP0|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC|T_BME280);
+#if 0
+uint32_t test_mask =  (T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC|T_BME280);
+#else
+uint32_t test_mask =  (T_OW_TEMP0|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC);
+#endif
 
 struct {
   uint32_t cs;
@@ -91,14 +98,14 @@ void print_version(void)
 /*---------------------------------------------------------------------------*/
 PROCESS(rss2_test_process, "rss2 test process");
 PROCESS(programmable_power, "programmable power process");
-AUTOSTART_PROCESSES(&rss2_test_process);
+PROCESS(serial_in, "cli input process");
+AUTOSTART_PROCESSES(&rss2_test_process, &serial_in);
 
 static struct etimer et, pp;
 extern uint16_t ledtimer_red, ledtimer_yellow;
 int ok;
 uint32_t cs1, cs2;
-int cs_init;
-
+int cs_init, retest;
 
 static void
 blink(voiD)
@@ -400,8 +407,27 @@ PROCESS_THREAD(rss2_test_process, ev, data)
     if(debug) 
       printf("LAST RESULT=0x%lx\n",  utmp32);
 
-    if(utmp32 == test_mask) 
+    if(utmp32 == test_mask) { 
       printf("PASSED LAST TEST\n");
+      retest = 0;
+    }
+    else {
+      retest = 1;
+      test = 0;
+      eeprom_write_block((void*)&test, (void*)&ee_test, sizeof(test));
+    }
+  }
+
+  etimer_set(&et, CLOCK_SECOND/4);
+  while(!retest) {
+    PROCESS_WAIT_UNTIL(etimer_expired(&et));
+    etimer_set(&et, CLOCK_SECOND/2);
+    
+    if(test == test_mask) {
+      ledtimer_red = ledtimer_yellow = 1000;
+      leds_on(LEDS_RED);
+      leds_on(LEDS_YELLOW);
+    }
   }
 
   if(1) {
@@ -428,26 +454,28 @@ PROCESS_THREAD(rss2_test_process, ev, data)
   read_values();
   test_values();
   
+#define DELAY 5
+
   /* 
-   * Delay 5 sec 
+   * Delay in sec 
    * Gives a chance to trigger some pulses
    */
   
-  printf("Trigger 5 sec RTC test\n");
+  printf("Trigger %d sec RTC test\n", DELAY);
   cs1 = clock_seconds();
-  etimer_set(&et, CLOCK_SECOND * 5);
+  etimer_set(&et, CLOCK_SECOND * DELAY);
   cs_init = 0;
   
   while(1) {
     PROCESS_WAIT_UNTIL(etimer_expired(&et));
-    
+
     test_values();
     cs2 = clock_seconds();
     
-    if(cs_init == 0 && (cs2-cs1 == 5)) {
+    if(cs_init == 0 && (cs2-cs1 == DELAY)) {
       cs_init = 1;
       test |= T_RTC;
-      printf("Trigger 5 sec RTC done\n");
+      printf("Trigger %d sec RTC done\n", DELAY);
     }
 
     etimer_reset(&et);
@@ -469,7 +497,7 @@ PROCESS_THREAD(programmable_power, ev, data)
   DDRE |= (1<<PWR_1);
 
   etimer_reset(&pp);
-  etimer_set(&pp, CLOCK_SECOND/2);
+  etimer_set(&pp, CLOCK_SECOND/4);
 
   while(1) {
 
@@ -481,6 +509,16 @@ PROCESS_THREAD(programmable_power, ev, data)
 
     etimer_reset(&pp);
     etimer_set(&pp, CLOCK_SECOND);
+  }
+  PROCESS_END();
+}
+PROCESS_THREAD(serial_in, ev, data)
+{
+  PROCESS_BEGIN();
+
+  while(1) {
+    PROCESS_WAIT_EVENT_UNTIL(ev == serial_line_event_message && data != NULL);
+    handle_serial_input((const char *) data);
   }
   PROCESS_END();
 }
