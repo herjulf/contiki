@@ -26,7 +26,7 @@ import subprocess
 
 def getSerialConfiguration():
   # return the connected serialIDs
-  serialConfiguration = {}
+  serialConfiguration = []
   for i in {2, 3, 4, 5}:
     # loop through USB interfaces
 #    serial = "49617"
