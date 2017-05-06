@@ -85,7 +85,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       recordID = int(self.path.split('/')[-1])
       serialWrite(LocalData.nodes[recordID]['serialPath'], LocalData.nodes[recordID]['serialBaudrate'], data)
       LocalData.records[recordID] = data
-      print "sent "%s" to node %s" % (str(data), LocalData.nodes[recordID]['moteSerialID'])
+      print "sent \"%s" to node %s\" % (str(data), LocalData.nodes[recordID]['moteSerialID'])
       self.send_response(200)
       self.end_headers()
 
