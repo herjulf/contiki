@@ -43,8 +43,8 @@ def initializeNodes():
   for s in serial:
     for n in LocalData.nodes:
       if (n['moteSerialID'] == s['serialID']):
-        n['serialPort'] = "/dev/%s" % s['serialPath']
-        print("found %s > %s" % s['serialID'], s['serialPath'])
+        n['serialPort'] = s['serialPath']
+        print("found %s > %s" % (s['serialID'], s['serialPath']))
 
   return 200
 
