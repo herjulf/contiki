@@ -82,8 +82,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
       length = int(self.headers.getheader('content-length'))
       data = urlparse.parse_qs(self.rfile.read(length), keep_blank_values=1)
-      recordID = self.path.split('/')[-1]
-      serialWrite(LocalData.nodes[recordId]['serialPath'], LocalData.nodes[recordId]['serialBaudrate'], data)
+      recordID = int(self.path.split('/')[-1])
+      serialWrite(LocalData.nodes[recordID]['serialPath'], LocalData.nodes[recordID]['serialBaudrate'], data)
       LocalData.records[recordID] = data
       print "record %s is added successfully" % recordID
       self.send_response(200)
