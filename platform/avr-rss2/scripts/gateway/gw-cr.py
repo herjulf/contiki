@@ -10,19 +10,21 @@ import json
 import subprocess
 import serial
 
+# usage:
+# 1) send configuration  POST /api/nodes/config -d @config.json
+# 2) send command        POST /api/nodes/x -d "cmd"
 
-# example configuration
-# {
+# example configuration (important: moteSerialID and serialBaudrate)
+# {"motes": [{
 #      "httpPort" : 12100,
 #      "moteNumber" : 10,
 #      "moteSerialID" : "49617",
 #      "serialPath" : ""                 # inserted by code in initializeNodes()
 #      "serialBaudrate" : 38400,
-#      "moteAddress" : "0.0",
-#      "moteType" : "avr-rss2",
 #      "logLevel" : 4,
 #      "logFile" : "log.log"
-#  }
+# }]
+# }
 
 
 
@@ -31,8 +33,6 @@ def getSerialConfiguration():
   serialConfiguration = []
   for i in {2, 3, 4, 5}:
     # loop through USB interfaces
-#    serial = "49617"
-#    path = "/dev/ttyUSB" + str(i-2)
     serial = subprocess.check_output(['cat', '/sys/bus/usb/devices/1-1.%d/serial' % i]).strip()
     ps = subprocess.Popen(('ls', '/sys/bus/usb/devices/1-1.%d:1.0/' % i), stdout=subprocess.PIPE)
     path = subprocess.check_output(('grep', 'ttyUSB'), stdin=ps.stdout).strip()
@@ -52,7 +52,7 @@ def initializeNodes():
 
 
 def serialWrite(port, baudrate, data):
-  ser = serial.Serial(port, baudrate)
+  ser = serial.Serial(port, baudrate, timeout=1)
   ser.write(str(data))
   ser.write('\n')
   ser.close()
@@ -78,17 +78,23 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       self.send_response(ret)
       self.end_headers()
 
-    elif None != re.search('/api/node/*', self.path):
+    elif None != re.search('/api/nodes/*', self.path):
       # command to be sent to node n
       ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
       length = int(self.headers.getheader('content-length'))
       data = self.rfile.read(length)
       recordID = int(self.path.split('/')[-1])
-      serialWrite(LocalData.nodes[recordID]['serialPath'], LocalData.nodes[recordID]['serialBaudrate'], data)
-      LocalData.records[recordID] = data
-      print "sent \"%s\" to node %s" % (str(data), LocalData.nodes[recordID]['moteSerialID'])
-      self.send_response(200)
-      self.end_headers()
+      if (recordID < len(LocalData.nodes)):
+        serialWrite(LocalData.nodes[recordID]['serialPath'], LocalData.nodes[recordID]['serialBaudrate'], data)
+        LocalData.records[recordID] = data
+        print "sent \"%s\" to node %s" % (str(data), LocalData.nodes[recordID]['moteSerialID'])
+        self.send_response(200)
+        self.end_headers()
+      else:
+        print "node id not valid"
+        self.send_response(403)
+        self.end_headers()
+
 
     else:
       self.send_response(403)
