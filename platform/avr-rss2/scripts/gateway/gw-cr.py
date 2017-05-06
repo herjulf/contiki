@@ -81,7 +81,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       # command to be sent to node n
       ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
       length = int(self.headers.getheader('content-length'))
-      data = urlparse.parse_qs(self.rfile.read(length), keep_blank_values=1)
+      data = self.rfile.read(length)
       recordID = int(self.path.split('/')[-1])
       serialWrite(LocalData.nodes[recordID]['serialPath'], LocalData.nodes[recordID]['serialBaudrate'], data)
       LocalData.records[recordID] = data
