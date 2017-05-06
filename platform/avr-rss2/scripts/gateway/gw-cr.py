@@ -53,7 +53,7 @@ def initializeNodes():
 
 def serialWrite(port, baudrate, data):
   ser = serial.Serial(port, baudrate)
-  ser.write(data)
+  ser.write(str(data))
   ser.close()
 
  
