@@ -39,12 +39,12 @@ def getSerialConfiguration():
 
 
 def initializeNodes():
-    serial = getSerialConfiguration()
-    for s in serial:
-      for n in LocalData.nodes:
-        if (n['moteSerialID'] == s['serialID']):
-          n['serialPort'] = "/dev/%s" % s['serialPath']
-          print("found")
+  serial = getSerialConfiguration()
+  for s in serial:
+    for n in LocalData.nodes:
+      if (n['moteSerialID'] == s['serialID']):
+        n['serialPort'] = "/dev/%s" % s['serialPath']
+        print("found %s > %s" % s['serialID'], s['serialPath'])
 
   return 200
 
