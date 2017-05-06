@@ -24,10 +24,9 @@ import subprocess
 
 
 
-def initializeNodes():
-  # go through nodes data structure and map usb port to the devices
-  # return HTTP response code
-
+def getSerialConfiguration():
+  # return the connected serialIDs
+  serialConfiguration = {}
   for i in {2, 3, 4, 5}:
     # loop through USB interfaces
 #    serial = "49617"
@@ -35,13 +34,17 @@ def initializeNodes():
     serial = subprocess.check_output(['cat', '/sys/bus/usb/devices/1-1.%d/serial' % i]).strip()
     ps = subprocess.Popen(('ls', '/sys/bus/usb/devices/1-1.%d:1.0/' % i), stdout=subprocess.PIPE)
     path = subprocess.check_output(('grep', 'ttyUSB'), stdin=ps.stdout).strip()
-    print(serial, path)
+    serialConfiguration.append({"serialID": serial, "serialPath": path})
+  return serialConfiguration
 
-    # find node with serial
-    for n in LocalData.nodes:
-      if (n['moteSerialID'] == serial):
-        n['serialPort'] = "/dev/%s" % path
-        print("found")
+
+def initializeNodes():
+    serial = getSerialConfiguration()
+    for s in serial:
+      for n in LocalData.nodes:
+        if (n['moteSerialID'] == s['serialID']):
+          n['serialPort'] = "/dev/%s" % s['serialPath']
+          print("found")
 
   return 200
 
@@ -103,6 +106,12 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 #      self.send_header('Content-Type', 'application/json')
       self.end_headers()
       self.wfile.write(LocalData.logs)
+
+    elif None != re.search('/api/usb', self.path):
+      self.send_response(200)
+      self.send_header('Content-Type', 'application/json')
+      self.end_headers()
+      self.wfile.write(getSerialConfiguration())
 
     else:
       self.send_response(403)
