@@ -8,6 +8,7 @@ import urlparse
 import json
 
 import subprocess
+import serial
 
 
 # example configuration
@@ -15,6 +16,7 @@ import subprocess
 #      "httpPort" : 12100,
 #      "moteNumber" : 10,
 #      "moteSerialID" : "49617",
+#      "serialPath" : ""                 # inserted by code in initializeNodes()
 #      "serialBaudrate" : 38400,
 #      "moteAddress" : "0.0",
 #      "moteType" : "avr-rss2",
@@ -48,13 +50,18 @@ def initializeNodes():
 
   return 200
 
+
+def serialWrite(port, baudrate, data):
+  ser = serial.Serial(port, baudrate)
+  ser.write(data)
+  ser.close()
+
  
 class LocalData(object):
   records = {}
   nodes = {}
   logs = {}
  
-
 class HTTPRequestHandler(BaseHTTPRequestHandler):
   def do_POST(self):
     if None != re.search('/api/nodes/config', self.path):
@@ -67,7 +74,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       print "configuration received"
       # map nodeId to usb port
       ret = initializeNodes()
-      print LocalData.nodes
       self.send_response(ret)
       self.end_headers()
 
@@ -77,6 +83,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       length = int(self.headers.getheader('content-length'))
       data = urlparse.parse_qs(self.rfile.read(length), keep_blank_values=1)
       recordID = self.path.split('/')[-1]
+      serialWrite(LocalData.nodes[recordId]['serialPath'], LocalData.nodes[recordId]['serialBaudrate'], data)
       LocalData.records[recordID] = data
       print "record %s is added successfully" % recordID
       self.send_response(200)
