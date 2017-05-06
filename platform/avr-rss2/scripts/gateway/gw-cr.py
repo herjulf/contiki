@@ -107,13 +107,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
       self.send_response(200)
 #      self.send_header('Content-Type', 'application/json')
       self.end_headers()
-      self.wfile.write(len(LocalData.records))
+      self.wfile.write(len(LocalData.nodes))
 
     elif None != re.search('/api/nodes', self.path):
       self.send_response(200)
 #      self.send_header('Content-Type', 'application/json')
       self.end_headers()
-      self.wfile.write(LocalData.records)
+      self.wfile.write(LocalData.nodes)
 
     elif None != re.search('/api/logs', self.path):
       self.send_response(200)
