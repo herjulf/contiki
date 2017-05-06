@@ -40,7 +40,7 @@ def initializeNodes():
     # find node with serial
     for n in LocalData.nodes:
       if (n['moteSerialID'] == serial):
-        n['serialPort'] = path;
+        n['serialPort'] = "/dev/%s" % path
         print("found")
 
   return 200
