@@ -32,9 +32,9 @@ def initializeNodes():
     # loop through USB interfaces
 #    serial = "49617"
 #    path = "/dev/ttyUSB" + str(i-2)
-    serial = subprocess.check_output(['cat', '/sys/bus/usb/devices/1-1.%d/serial' % i])
+    serial = subprocess.check_output(['cat', '/sys/bus/usb/devices/1-1.%d/serial' % i], shell=True).strip()
     ps = subprocess.Popen(('ls', '/sys/bus/usb/devices/1-1.%d:1.0/' % i), stdout=subprocess.PIPE)
-    path = subprocess.check_output(('grep', 'ttyUSB'), stdin=ps.stdout)
+    path = subprocess.check_output(('grep', 'ttyUSB'), stdin=ps.stdout, shell=True).strip()
     print(serial, path)
 
     # find node with serial
