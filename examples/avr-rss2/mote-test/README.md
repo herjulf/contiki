@@ -107,4 +107,4 @@ https://github.com/herjulf/contiki/tree/mote-test/examples/avr-rss2/mote-test
 
 Full Program Setup
 ------------------
-http://www.radio-sensors.com/download/diag-rss2/rss2-program.jpg
+http://www.radio-sensors.com/download/diag-rss2/diag-rss2.avr-rss2
