@@ -35,7 +35,7 @@
  * \file
  *         HW test application for RSS2 mote
  */
-#define VERSION       "1.1-2017-05-02"
+#define VERSION       "1.1-2017-05-07"
 
 #include <avr/eeprom.h>
 #include "contiki.h"
@@ -74,8 +74,8 @@ extern void handle_serial_input(const char *line);
 volatile uint32_t test = DEF_TEST;  /* default test mask */
 uint32_t EEMEM ee_test = DEF_TEST;
 
-#if 0
-uint32_t test_mask =  (T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC|T_BME280);
+#if 1
+uint32_t test_mask =    (T_BME280|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC);
 #else
 uint32_t test_mask =  (T_OW_TEMP0|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC);
 #endif
@@ -537,7 +537,7 @@ PROCESS_THREAD(programmable_power, ev, data)
     PORTE ^= (1<<PWR_1);
 
     etimer_reset(&pp);
-    etimer_set(&pp, CLOCK_SECOND);
+    etimer_set(&pp, CLOCK_SECOND/2);
   }
   PROCESS_END();
 }
