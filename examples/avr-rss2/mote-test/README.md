@@ -100,11 +100,17 @@ Flash
 -----
 avrdude -p m256rfr2 -c stk500v2 -P /dev/ttyUSB0 -b 38400 -e -U flash:w:diag-rss2.avr-rss2
 
-References
-----------
+References and code
+-------------------
 https://github.com/herjulf/contiki/tree/mote-test
 https://github.com/herjulf/contiki/tree/mote-test/examples/avr-rss2/mote-test
 
-Full Program Setup
-------------------
+Prebuilt application
+--------------------
 http://www.radio-sensors.com/download/diag-rss2/diag-rss2.avr-rss2
+
+
+TODO 
+----
+DC-connector test.
+Radio test.
