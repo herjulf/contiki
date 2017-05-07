@@ -1,7 +1,7 @@
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
-CONTIKI_PROJECT = rss2-test
+CONTIKI_PROJECT = diag-rss2
 
-CONTIKI_SOURCEFILES += rss2-test_cli.c
+CONTIKI_SOURCEFILES += diag-rss2-cli.c
 
 all: $(CONTIKI_PROJECT)
 

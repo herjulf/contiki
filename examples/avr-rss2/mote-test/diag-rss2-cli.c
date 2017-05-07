@@ -84,6 +84,10 @@
 #define CLI_PROJECT  ""
 #endif
 
+extern int retest;
+extern void test_status(void);
+extern void force_retest(void);
+
 const char *delim = " \t\r,";
 #define END_OF_FILE 26
 uint8_t eof = END_OF_FILE;
@@ -102,9 +106,12 @@ print_help(void)
   printf("%s\n", CLI_PROJECT);
   printf("cli: version=%s", CLI_VERSION);
   printf("show version\n");
+  printf("show version\n");
   printf("set debug  -- select debug info\n");
   printf("i2c       -- probe i2c bus\n");
   printf("help         -- this menu\n");
+  printf("retest       -- restart test\n");
+  printf("status       -- test status\n");
   printf("upgr         -- reboot via bootloader\n");
 
   printf("Uptime %lu sec\n", clock_seconds());
@@ -204,7 +211,13 @@ handle_serial_input(const char *line)
     while(1) ;
   }
 #endif
-  if(!strcmp(p, "help") || !strcmp(p, "h")) {
+  else if(!strcmp(p, "retest") || !strcmp(p, "r")) {
+    force_retest();
+  }
+  else if(!strcmp(p, "status") || !strcmp(p, "s")) {
+    test_status();
+  }
+  else if(!strcmp(p, "help") || !strcmp(p, "h")) {
     print_help();
   } else { printf("Illegal command '%s'\n", p);
   }
