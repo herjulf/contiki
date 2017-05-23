@@ -66,6 +66,8 @@
 #define T_RTC            (1<<11)
 #define T_RADIO          (1<<12)
 #define T_DC_IN          (1<<13)
+#define T_BUTTON         (1<<15)
+#define T_RADIO          (1<<16)
 
 #define DEF_TEST 0
 
