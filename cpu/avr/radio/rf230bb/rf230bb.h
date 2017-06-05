@@ -226,6 +226,7 @@ bool rf230_is_ready_to_send();
 extern uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
 
 uint8_t rf230_get_raw_rssi(void);
+static bool rf232_is_sleeping(void);
 
 #define rf230_rssi	rf230_get_raw_rssi
 

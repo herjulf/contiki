@@ -215,11 +215,23 @@ volatile uint8_t rf230_wakewait, rf230_txendwait, rf230_ccawait;
 
 uint8_t volatile rf230_pending;
 
+/* Note!
+   The values for new AtMegaXXXRF is according to application note
+   AT02601 and are only valid when decoupling capacitors CB1/CB3
+   are 100nF
+*/
+
 /* RF230 hardware delay times, from datasheet */
 typedef enum{
+#if defined(__AVR_ATmega128RFA1__) || defined(__AVR_ATmega128RFR2__) || defined(__AVR_ATmega256RFR2__)
+    TIME_TO_ENTER_P_ON               = 330, /**<  Transition time from VCC is applied to P_ON - most favorable case! */
+    TIME_P_ON_TO_TRX_OFF             = 210, /**<  Transition time from P_ON to TRX_OFF. */
+    TIME_SLEEP_TO_TRX_OFF            = 240, /**<  Transition time from SLEEP to TRX_OFF. */
+#else
     TIME_TO_ENTER_P_ON               = 510, /**<  Transition time from VCC is applied to P_ON - most favorable case! */
     TIME_P_ON_TO_TRX_OFF             = 510, /**<  Transition time from P_ON to TRX_OFF. */
     TIME_SLEEP_TO_TRX_OFF            = 880, /**<  Transition time from SLEEP to TRX_OFF. */
+#endif
     TIME_RESET                       = 6,   /**<  Time to hold the RST pin low during reset */
     TIME_ED_MEASUREMENT              = 140, /**<  Time it takes to do a ED measurement. */
     TIME_CCA                         = 140, /**<  Time it takes to do a CCA. */
@@ -227,7 +239,11 @@ typedef enum{
     TIME_FTN_TUNING                  = 25,  /**<  Maximum time it should take to do the filter tuning. */
     TIME_NOCLK_TO_WAKE               = 6,   /**<  Transition time from *_NOCLK to being awake. */
     TIME_CMD_FORCE_TRX_OFF           = 1,   /**<  Time it takes to execute the FORCE_TRX_OFF command. */
+#if defined(__AVR_ATmega128RFA1__) || defined(__AVR_ATmega128RFR2__) || defined(__AVR_ATmega256RFR2__)
+    TIME_TRX_OFF_TO_PLL_ACTIVE       = 80, /**<  Transition time from TRX_OFF to: RX_ON, PLL_ON, TX_ARET_ON and RX_AACK_ON. */
+#else
     TIME_TRX_OFF_TO_PLL_ACTIVE       = 180, /**<  Transition time from TRX_OFF to: RX_ON, PLL_ON, TX_ARET_ON and RX_AACK_ON. */
+#endif
     TIME_STATE_TRANSITION_PLL_ACTIVE = 1,   /**<  Transition time from PLL active state to another. */
 }radio_trx_timing_t;
 /*---------------------------------------------------------------------------*/
@@ -463,8 +479,7 @@ get_value(radio_param_t param, radio_value_t *value)
 
   switch(param) {
   case RADIO_PARAM_POWER_MODE:
-    // *value = (REG(RFCORE_XREG_RXENABLE) && RFCORE_XREG_RXENABLE_RXENMASK) == 0
-    //? RADIO_POWER_MODE_OFF : RADIO_POWER_MODE_ON;
+    *value = (rf232_is_sleeping() == 0) ? RADIO_POWER_MODE_OFF : RADIO_POWER_MODE_ON;
     return RADIO_RESULT_OK;
 
   case RADIO_PARAM_TX_MODE:
@@ -679,8 +694,7 @@ radio_get_trx_state(void)
  *                      states.
  *  \retval     false   The radio transceiver is not sleeping.
  */
-#if 0
-static bool radio_is_sleeping(void)
+static bool rf232_is_sleeping(void)
 {
     bool sleeping = false;
 
@@ -692,7 +706,6 @@ static bool radio_is_sleeping(void)
 
     return sleeping;
 }
-#endif
 /*----------------------------------------------------------------------------*/
 /** \brief  This function will reset the state machine (to TRX_OFF) from any of
  *          its states, except for the SLEEP state.
