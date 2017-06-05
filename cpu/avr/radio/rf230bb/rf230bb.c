@@ -240,7 +240,7 @@ typedef enum{
     TIME_NOCLK_TO_WAKE               = 6,   /**<  Transition time from *_NOCLK to being awake. */
     TIME_CMD_FORCE_TRX_OFF           = 1,   /**<  Time it takes to execute the FORCE_TRX_OFF command. */
 #if defined(__AVR_ATmega128RFA1__) || defined(__AVR_ATmega128RFR2__) || defined(__AVR_ATmega256RFR2__)
-    TIME_TRX_OFF_TO_PLL_ACTIVE       = 80, /**<  Transition time from TRX_OFF to: RX_ON, PLL_ON, TX_ARET_ON and RX_AACK_ON. */
+    TIME_TRX_OFF_TO_PLL_ACTIVE       = 80, /** 110 for 1uF <  Transition time from TRX_OFF to: RX_ON, PLL_ON, TX_ARET_ON and RX_AACK_ON. */
 #else
     TIME_TRX_OFF_TO_PLL_ACTIVE       = 180, /**<  Transition time from TRX_OFF to: RX_ON, PLL_ON, TX_ARET_ON and RX_AACK_ON. */
 #endif
