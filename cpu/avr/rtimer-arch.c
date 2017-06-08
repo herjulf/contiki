@@ -50,6 +50,7 @@
 
 extern uint32_t msc_get_counter();
 extern uint32_t msc_sync();
+volatile uint8_t rtimer_wait;
 
 void
 rtimer_arch_init(void)
@@ -79,8 +80,10 @@ rtimer_arch_sleep(rtimer_clock_t howlong)
   set_sleep_mode(SLEEP_MODE_PWR_SAVE);
   msc_sync_counter(); /* Needed before sleep */
 
+  rtimer_wait = 1;
   sei();
-  sleep_mode();
+  while(rtimer_wait)
+    sleep_mode();
   watchdog_start();
 }
 

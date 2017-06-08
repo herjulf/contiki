@@ -41,6 +41,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <dev/watchdog.h>
 
 #include "contiki.h"
 
@@ -271,21 +272,6 @@ static rtimer_clock_t get_rx_packet_timestamp(void);
 volatile uint32_t last_packet_timestamp = 0;
 
 uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
-
-static
-foo(int a)
-{
-  /* Set up number of automatic retries 0-15
-   * (0 implies PLL_ON sends instead of the extended TX_ARET mode */
-  hal_subregister_write(SR_MAX_FRAME_RETRIES,
-      (RF230_CONF_FRAME_RETRIES > 0) ? (RF230_CONF_FRAME_RETRIES - 1) : 0 );
- 
- /* Set up carrier sense/clear channel assesment parameters for extended operating mode */
-  hal_subregister_write(SR_MAX_CSMA_RETRIES, RF230_CONF_CSMA_RETRIES );//highest allowed retries
-  hal_register_write(RG_CSMA_BE, 0x80);       //min backoff exponent 0, max 8 (highest allowed)
-  hal_register_write(RG_CSMA_SEED_0,hal_register_read(RG_PHY_RSSI) );//upper two RSSI reg bits RND_VALUE are random 
-}
-
 
 static inline uint32_t msc_read32(volatile uint8_t *hh,
 		volatile uint8_t *hl,
@@ -1540,7 +1526,6 @@ rf230_prepare(const void *payload, unsigned short payload_len)
 {
   int ret = 0;
   uint8_t total_len,*pbuf;
-  uint8_t reg;
   rtimer_clock_t time;
 #if RF230_CONF_TIMESTAMPS_NOTNOW
   struct timestamp timestamp;
@@ -1837,6 +1822,7 @@ rtimer_arch_schedule(rtimer_clock_t t)
 
 ISR(SCNT_CMP2_vect)
 {
+  rtimer_wait = 0;
   watchdog_periodic();
   sei(); /* Allow nested interrupts */
   rtimer_run_next();

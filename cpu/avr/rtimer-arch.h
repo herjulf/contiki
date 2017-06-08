@@ -55,6 +55,8 @@
    Intended only for positive values of T. */
 #define RTIMERTICKS_TO_US_64(T)  ((uint32_t)(((uint64_t)(T) * 1000000L + ((RTIMER_ARCH_SECOND) / 2)) / (RTIMER_ARCH_SECOND)))
 
+extern volatile uint8_t rtimer_wait;
+
 rtimer_clock_t rtimer_arch_now(void);
 void rtimer_arch_sleep(rtimer_clock_t howlong);
 #endif /* RTIMER_ARCH_H_ */
