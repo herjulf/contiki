@@ -173,7 +173,7 @@ rtimer_clock_t rtimer_arch_now();
 #endif
 
 #define TIMESYNCH_CONF_ENABLED 0
-#define RF230_CONF_TIMESTAMPS 1
+#define RF230_CONF_TIMESTAMPS 0
 
 #define MCUCSR  MCUSR
 
