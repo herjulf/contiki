@@ -40,6 +40,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#if WITH_ORCHESTRA
+#include "orchestra.h"
+#endif
 
 #define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
@@ -154,9 +157,9 @@ PROCESS_THREAD(udp_server_process, ev, data)
   
   print_local_addresses();
 
-  /* The data sink runs with a 100% duty cycle in order to ensure high 
-     packet reception rates. */
-  //NETSTACK_MAC.off(1);
+#if WITH_ORCHESTRA
+  orchestra_init();
+#endif
 
   server_conn = udp_new(NULL, UIP_HTONS(UDP_CLIENT_PORT), NULL);
   if(server_conn == NULL) {
