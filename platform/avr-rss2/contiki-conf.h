@@ -74,11 +74,9 @@ rtimer_clock_t rtimer_arch_now();
 
 #endif
 
-/* Delay between GO signal and SFD
- * Measured 153us between GO and preamble. Add 5 bytes (preamble + SFD) air time: 153+5*32 = 313 */
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313)) //313
-/* Delay between GO signal and start listening
- * Measured 104us: between GO signal and start listening */
+/* Delay between GO signal and SFD */
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313))
+/* Delay between GO signal and start listening */
 #define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(204))
 /* Delay between the SFD finishes arriving and it is detected in software */
 #define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(40)) //40
@@ -245,7 +243,7 @@ typedef unsigned short uip_stats_t;
 /* TX routine does automatic cca and optional backoffs */
 #define RDC_CONF_HARDWARE_CSMA   1
 /* Allow MCU sleeping between channel checks */
-#ifndef RDC_CONF_MCU_SLEEP   
+#ifndef RDC_CONF_MCU_SLEEP
 #define RDC_CONF_MCU_SLEEP       1
 #endif
 
