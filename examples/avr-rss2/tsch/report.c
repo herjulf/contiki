@@ -40,9 +40,6 @@
 #include "dev/temp_mcu-sensor.h"
 #endif
 #include "dev/light-sensor.h"
-#ifdef CO2
-#include "dev/co2_sa_kxx-sensor.h"
-#endif
 #ifdef WITH_COMPOWER
 #include "powertrace.h"
 #endif
@@ -98,6 +95,7 @@ send_packet(void *ptr)
 
   len += snprintf((char *) &buf[len], sizeof(buf), "&: ");
   len += snprintf((char *) &buf[len], sizeof(buf), "V_MCU=%-d ", battery_sensor.value(0));
+  len += snprintf((char *) &buf[len], sizeof(buf), "SEQ=%-d ", seq_id);
 
   /* 
    * Cooja needs to set a node_id. So we can skip sensor reading in case of simulation.
@@ -108,9 +106,6 @@ send_packet(void *ptr)
     len += snprintf((char *) &buf[len], sizeof(buf), "T_MCU=%-d ", temp_mcu_sensor.value(0));
 #endif
     len += snprintf((char *) &buf[len], sizeof(buf), "LIGHT=%-d ", light_sensor.value(0));
-#ifdef CO2
-    len += snprintf((char *) &buf[len], sizeof(buf), "CO2=%-d ", co2_sa_kxx_sensor.value(value));
-#endif
   }
   PRINTF("TX %d to %d %s\n",
          server_ipaddr.u8[sizeof(server_ipaddr.u8) - 1], seq_id, buf);
@@ -183,7 +178,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
 #endif
 
   PROCESS_BEGIN();
-
   PROCESS_PAUSE();
 
   SENSORS_ACTIVATE(battery_sensor);
@@ -191,9 +185,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
   SENSORS_ACTIVATE(temp_mcu_sensor);
 #endif
   SENSORS_ACTIVATE(light_sensor);
-#ifdef CO2
-  SENSORS_ACTIVATE(co2_sa_kxx_sensor);
-#endif
   set_global_address();
   leds_init();
 
@@ -224,7 +215,6 @@ PROCESS_THREAD(udp_client_process, ev, data)
     if(ev == tcpip_event) {
       tcpip_handler();
     }
-    
     if(etimer_expired(&periodic)) {
       etimer_reset(&periodic);
       ctimer_set(&backoff_timer, SEND_TIME, send_packet, NULL);
@@ -237,10 +227,8 @@ PROCESS_THREAD(udp_client_process, ev, data)
 	print = 0;
       }
 #endif
-
     }
   }
-
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/

@@ -68,7 +68,8 @@ tcpip_handler(void)
     appdata = (char *)uip_appdata;
     appdata[uip_datalen()] = 0;
     PRINTF("Report RX '%s' from ", appdata);
-    PRINTF("%d",
+    PRINTF("%02x%02x",
+           UIP_IP_BUF->srcipaddr.u8[sizeof(UIP_IP_BUF->srcipaddr.u8) - 2],
            UIP_IP_BUF->srcipaddr.u8[sizeof(UIP_IP_BUF->srcipaddr.u8) - 1]);
     PRINTF("\n");
 #if SERVER_REPLY
