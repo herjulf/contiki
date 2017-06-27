@@ -85,7 +85,7 @@ extern uint8_t debugflowsize,debugflow[DEBUGFLOWSIZE];
 #endif
 
 uint16_t
-rtimer_arch_now(void) 
+rtimer_arch_now(void)
 {
   uint16_t t;
   uint8_t sreg;
@@ -240,7 +240,6 @@ rtimer_arch_schedule(rtimer_clock_t t)
 }
 
 #if RDC_CONF_MCU_SLEEP
-extern poll_mode;
 /*---------------------------------------------------------------------------*/
 void
 rtimer_arch_sleep(rtimer_clock_t howlong)
@@ -261,24 +260,15 @@ uint32_t longhowlong;
 #endif
     cli();
 	watchdog_stop();
-	if(poll_mode)
-#if NETSTACK_CONF_MAC==tschmac_driver
-	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
-	//set_sleep_mode(SLEEP_MODE_IDLE);
-#else
-	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
-#endif
-	else 
-	  set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
 
-#if NETSTACK_CONF_MAC!=tschmac_driver
 /* Set TIMER2 clock asynchronus from external source, CTC mode */
     ASSR |= (1 << AS2);
     TCCR2A =(1<<WGM21);
 /* Set prescaler and TIMER2 output compare register */
-#if 1 // RTIMER_ARCH_PRESCALER==1024    //Prescale by 1024 -   32 ticks/sec, 8 seconds max sleep
+#if RTIMER_ARCH_PRESCALER==1024    //Prescale by 1024 -   32 ticks/sec, 8 seconds max sleep
     TCCR2B =((1<<CS22)|(1<<CS21)|(1<<CS20));
-    longhowlong=howlong*32UL; 
+    longhowlong=howlong*32UL;
 #elif RTIMER_ARCH_PRESCALER==256  // Prescale by 256 -  128 ticks/sec, 2 seconds max sleep
 	TCCR2B =((1<<CS22)|(1<<CS21)|(0<<CS20));
 	longhowlong=howlong*128UL;
@@ -303,12 +293,6 @@ uint32_t longhowlong;
 /* Reset timer count, wait for the write (which assures TCCR2x and OCR2A are finished) */
     TCNT2 = 0; 
     while(ASSR & (1 << TCN2UB));
-#include "dev/radio.h"
-#include "rf230bb.h"
-
- /* MAC symbol counter needs to finish */
-  while( hal_subregister_read(SR_SCBSY)); 
-
 
 /* Enable TIMER2 output compare interrupt, sleep mode and sleep */
     TIMSK2 |= (1 << OCIE2A);
@@ -349,8 +333,6 @@ uint32_t longhowlong;
 	longhowlong=CLOCK_CONF_SECOND;
 	longhowlong*=howlong;
     clock_adjust_ticks(longhowlong/RTIMER_ARCH_SECOND);
-
-#endif /* NETSTACK_CONF_MAC!=tschmac_driver */
 }
 #if !AVR_CONF_USE32KCRYSTAL
 /*---------------------------------------------------------------------------*/
@@ -358,7 +340,7 @@ uint32_t longhowlong;
 
 ISR(TIMER2_COMPA_vect)
 {
-  TIMSK2 &= ~(1 << OCIE2A);       //Just one interrupt needed for waking
+//    TIMSK2 &= ~(1 << OCIE2A);       //Just one interrupt needed for waking
 }
 #endif /* !AVR_CONF_USE32KCRYSTAL */
 #endif /* RDC_CONF_MCU_SLEEP */

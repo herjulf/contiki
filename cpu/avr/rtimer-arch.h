@@ -50,10 +50,7 @@
  * clock to 32768 crystal. This gives RTIMER_ARCH_SECOND = 8192.
  */
 #ifndef RTIMER_ARCH_PRESCALER
-//#define RTIMER_ARCH_PRESCALER 1024UL
-//#define RTIMER_ARCH_PRESCALER 64UL
 #define RTIMER_ARCH_PRESCALER 256UL
-//#define RTIMER_ARCH_PRESCALER 8UL
 #endif
 #if RTIMER_ARCH_PRESCALER
 #define RTIMER_ARCH_SECOND (F_CPU/RTIMER_ARCH_PRESCALER)
@@ -76,13 +73,12 @@
 #define RTIMERTICKS_TO_US_64(T)  ((uint32_t)(((uint64_t)(T) * 1000000 + ((RTIMER_ARCH_SECOND) / 2)) / (RTIMER_ARCH_SECOND)))
 
 #ifdef TCNT3
-#define _rtimer_arch_now() (TCNT3)
+uint16_t rtimer_arch_now(void);
 #elif RTIMER_ARCH_PRESCALER
 #define rtimer_arch_now() (TCNT1)
 #else
 #define rtimer_arch_now() (0)
 #endif
 
-uint16_t rtimer_arch_now(void);
 void rtimer_arch_sleep(rtimer_clock_t howlong);
 #endif /* RTIMER_ARCH_H_ */
