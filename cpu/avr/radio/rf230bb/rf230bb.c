@@ -69,7 +69,7 @@
 #include "net/netstack.h"
 
 /* Timestamps have not been tested */
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
 #include "net/rime/timesynch.h"
 #define TIMESTAMP_LEN 3
 #else /* RF230_CONF_TIMESTAMPS */
@@ -199,7 +199,7 @@ extern uint8_t debugflowsize,debugflow[DEBUGFLOWSIZE];
 #endif
 
 /* XXX hack: these will be made as Chameleon packet attributes */
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
 rtimer_clock_t rf230_time_of_arrival, rf230_time_of_departure;
 
 int rf230_authority_level_of_sender;
@@ -255,21 +255,6 @@ static rtimer_clock_t get_rx_packet_timestamp(void);
 volatile uint32_t last_packet_timestamp = 0;
 
 uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
-
-static
-foo(int a)
-{
-  /* Set up number of automatic retries 0-15
-   * (0 implies PLL_ON sends instead of the extended TX_ARET mode */
-  hal_subregister_write(SR_MAX_FRAME_RETRIES,
-      (RF230_CONF_FRAME_RETRIES > 0) ? (RF230_CONF_FRAME_RETRIES - 1) : 0 );
- 
- /* Set up carrier sense/clear channel assesment parameters for extended operating mode */
-  hal_subregister_write(SR_MAX_CSMA_RETRIES, RF230_CONF_CSMA_RETRIES );//highest allowed retries
-  hal_register_write(RG_CSMA_BE, 0x80);       //min backoff exponent 0, max 8 (highest allowed)
-  hal_register_write(RG_CSMA_SEED_0,hal_register_read(RG_PHY_RSSI) );//upper two RSSI reg bits RND_VALUE are random 
-}
-
 
 static inline uint32_t macsc_read32(volatile uint8_t *hh,
 		volatile uint8_t *hl,
@@ -1325,7 +1310,7 @@ rf230_transmit(unsigned short payload_len)
   int txpower;
   uint8_t total_len;
   uint8_t tx_result;
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
   struct timestamp timestamp;
 #endif /* RF230_CONF_TIMESTAMPS */
 
@@ -1391,7 +1376,7 @@ rf230_transmit(unsigned short payload_len)
 
   total_len = payload_len + AUX_LEN;
 
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
   rtimer_clock_t txtime = timesynch_time();
 #endif /* RF230_CONF_TIMESTAMPS */
 
@@ -1446,7 +1431,7 @@ rf230_transmit(unsigned short payload_len)
     set_txpower(txpower & 0xff);
   }
  
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
   setup_time_for_transmission = txtime - timestamp.time;
 
   if(num_transmissions < 10000) {
@@ -1518,7 +1503,7 @@ rf230_prepare(const void *payload, unsigned short payload_len)
   uint8_t total_len,*pbuf;
   uint8_t reg;
   rtimer_clock_t time;
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
   struct timestamp timestamp;
 #endif
 #if RF230_CONF_CHECKSUM
@@ -1559,7 +1544,7 @@ rf230_prepare(const void *payload, unsigned short payload_len)
   pbuf+=CHECKSUM_LEN;
 #endif
 
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
   timestamp.authority_level = timesynch_authority_level();
   timestamp.time = timesynch_time();
   memcpy(pbuf,&timestamp,TIMESTAMP_LEN);
@@ -1821,7 +1806,7 @@ rf230_interrupt(uint8_t irq)
 if (1 || RF230_receive_on) {
   DEBUGFLOW('+');
 #endif
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
   interrupt_time = timesynch_time();
   interrupt_time_set = 1;
 #endif /* RF230_CONF_TIMESTAMPS */
@@ -1946,7 +1931,7 @@ rf230_read(void *buf, unsigned short bufsize)
 #if RF230_CONF_CHECKSUM
   uint16_t checksum;
 #endif
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
   struct timestamp t;
 #endif
 
@@ -1972,7 +1957,7 @@ rf230_read(void *buf, unsigned short bufsize)
     return 0;
   }
 
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
   if(interrupt_time_set) {
     rf230_time_of_arrival = interrupt_time;
     interrupt_time_set = 0;
@@ -2020,7 +2005,7 @@ rf230_read(void *buf, unsigned short bufsize)
   memcpy(&checksum,framep,CHECKSUM_LEN);
 #endif /* RF230_CONF_CHECKSUM */
   framep+=CHECKSUM_LEN;
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
   memcpy(&t,framep,TIMESTAMP_LEN);
 #endif /* RF230_CONF_TIMESTAMPS */
   framep+=TIMESTAMP_LEN;
@@ -2062,7 +2047,7 @@ rf230_read(void *buf, unsigned short bufsize)
 
     RIMESTATS_ADD(rx);
 
-#if RF230_CONF_TIMESTAMPS_NOTNOW
+#if RF230_CONF_TIMESTAMPS
     rf230_time_of_departure =
       t.time +
       setup_time_for_transmission +
