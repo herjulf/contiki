@@ -45,6 +45,11 @@
 #endif
 #include <stdio.h>
 #include <string.h>
+#include "net/mac/tsch/tsch.h"
+
+#if WITH_ORCHESTRA
+#include "orchestra.h"
+#endif 
 
 #define UDP_CLIENT_PORT 8765
 #define UDP_SERVER_PORT 5678
@@ -207,6 +212,10 @@ PROCESS_THREAD(udp_client_process, ev, data)
 
 #if WITH_COMPOWER
   powertrace_sniff(POWERTRACE_ON);
+#endif
+
+#if WITH_ORCHESTRA
+  orchestra_init();
 #endif
 
   etimer_set(&periodic, SEND_INTERVAL);
