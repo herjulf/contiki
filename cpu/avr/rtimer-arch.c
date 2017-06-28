@@ -45,7 +45,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
-#include "contiki.h"
 #include "sys/energest.h"
 #include "sys/rtimer.h"
 #include "rtimer-arch.h"
@@ -259,8 +258,8 @@ uint32_t longhowlong;
     uint8_t savedTCNT2=TCNT2, savedTCCR2A=TCCR2A, savedTCCR2B = TCCR2B, savedOCR2A = OCR2A;
 #endif
     cli();
-	watchdog_stop();
-	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+    watchdog_stop();
+    set_sleep_mode(SLEEP_MODE_PWR_SAVE);
 
 /* Set TIMER2 clock asynchronus from external source, CTC mode */
     ASSR |= (1 << AS2);

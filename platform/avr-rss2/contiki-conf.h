@@ -54,32 +54,12 @@
 #define F_CPU          8000000UL
 #endif
 
-
-#if 0
-/* Platform typedefs */
-typedef uint32_t clock_time_t;
-typedef uint32_t uip_stats_t;
-
-/* Clock (time) comparison macro */
-#define CLOCK_LT(a, b)  ((signed long)((a) - (b)) < 0)
-
-/*
- * rtimer.h typedefs rtimer_clock_t as unsigned short. We need to define
- * RTIMER_CLOCK_DIFF to override this
- */
-typedef uint32_t rtimer_clock_t;
-#define RTIMER_CLOCK_DIFF(a, b)     ((int32_t)((a) - (b)))
-
-rtimer_clock_t rtimer_arch_now();
-
-#endif
-
 /* Delay between GO signal and SFD */
 #define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313))
 /* Delay between GO signal and start listening */
 #define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(204))
 /* Delay between the SFD finishes arriving and it is detected in software */
-#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(40)) //40
+#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(40))
 
 #if NETSTACK_CONF_MAC==tschmac_driver
 #define WITH_SEND_CCA 0
@@ -87,41 +67,17 @@ rtimer_clock_t rtimer_arch_now();
 #define RF230_CONF_AUTORETRIES 0
 #endif
 
+#ifndef TSCH_CONF_RX_WAIT
+#define TSCH_CONF_RX_WAIT 1800
+#endif
+
 #define TSCH_DEBUG 1
 
 #if TSCH_DEBUG
 #define TSCH_DEBUG_INIT() do {DDRD |= (1<<PD6);} while(0);
-
-#define __TSCH_DEBUG_INTERRUPT() do { \
-    ledtimer_green = 1000;leds_on(LEDS_GREEN); } while(0);
-
-#define __TSCH_DEBUG_RX_EVENT() do { \
-    ledtimer_blue = 1000;leds_on(LEDS_BLUE); } while(0);
-
-#define _TSCH_DEBUG_TX_EVENT() do { \
-    ledtimer_yellow = 1000;leds_on(LEDS_YELLOW); } while(0);
-
-#define __TSCH_DEBUG_SLOT_START() do { \
-  ledtimer_red = 1000;leds_on(LEDS_RED); } while(0);
-
-#define __TSCH_DEBUG_SLOT_START() do { \
-  ledtimer_red = 1000;leds_on(LEDS_RED); } while(0);
-
 #define TSCH_DEBUG_SLOT_START() do{ PORTD |= (1<<PD6); } while(0);
-
-#define __TSCH_DEBUG_SLOT_END() do { \
-    ledtimer_yellow = 1000;leds_on(LEDS_YELLOW); } while(0);
-
 #define TSCH_DEBUG_SLOT_END() do{ PORTD &= ~(1<<PD6); } while(0);
-
-#define TSCH_CLOCK() do{ PORTD ^= (1<<PD6); } while(0);
-#define TSCH_CLOCK_HI() do{ PORTD |= (1<<PD6); } while(0);
-#define TSCH_CLOCK_LO() do{ PORTD &= ~(1<<PD6); } while(0);
-
 #endif /* TSCH_DEBUG */
-
-
-#include <stdint.h>
 
 #ifndef NETSTACK_CONF_MAC
 #define NETSTACK_CONF_MAC     csma_driver
@@ -156,8 +112,8 @@ rtimer_clock_t rtimer_arch_now();
 #define RF230_CONF_AUTOACK        1
 #endif
 
-/* 
-   TX Filter. Be careful. This setting impacts RF-emission. And might violate CE, FCC 
+/*
+   TX Filter. Be careful. This setting impacts RF-emission. And might violate CE, FCC
    regulations. RS boards has separate bandpass filter and conform to CE with any setting.
  */
 #ifndef RF230_CONF_PLL_TX_FILTER
