@@ -62,13 +62,12 @@
 
 #include "dev/leds.h"
 #include "dev/spi.h"
+#include "dev/radio.h"
 #include "rf230bb.h"
 
 #include "net/packetbuf.h"
 #include "net/rime/rimestats.h"
 #include "net/netstack.h"
-
-#define WITH_SEND_CCA 0
 
 /* Timestamps have not been tested */
 #if RF230_CONF_TIMESTAMPS
@@ -87,13 +86,11 @@
 
 /* Autoack setting ignored in non-extended mode */
 #ifndef RF230_CONF_AUTOACK
-#define RF230_CONF_AUTOACK 1
+#define RF230_CONF_AUTOACK 0
 #endif
 
 /* We need to turn off autoack in promiscuous mode */
-#if RF230_CONF_AUTOACK
 static bool is_promiscuous;
-#endif
 
 /* Poll mode disabled by default */
 uint8_t poll_mode = 0;
@@ -245,7 +242,7 @@ typedef enum{
 PROCESS(rf230_process, "RF230 driver");
 /*---------------------------------------------------------------------------*/
 
-int rf230_interrupt(void);
+int rf230_interrupt(uint8_t irq);
 
 static int rf230_on(void);
 static int rf230_off(void);
@@ -259,8 +256,27 @@ static int rf230_send(const void *data, unsigned short len);
 static int rf230_receiving_packet(void);
 static int rf230_pending_packet(void);
 static int rf230_cca(void);
+static rtimer_clock_t get_rx_packet_timestamp(void);
+
+/* SFD timestamp in RTIMER ticks */
+static volatile uint32_t last_packet_timestamp = 0;
 
 uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
+
+#define SYS_CTRL_16MHZ               16000000
+#define RADIO_TO_RTIMER(X) ((uint32_t)((uint64_t)(X) * RTIMER_ARCH_SECOND / SYS_CTRL_16MHZ))
+
+/*---------------------------------------------------------------------------*/
+static rtimer_clock_t
+get_rx_packet_timestamp(void)
+{
+  /* Save SFD timestamp, converted from radio timer to RTIMER */
+  last_packet_timestamp = RTIMER_NOW();
+  /* The remaining measured error is typically in range 0..16 usec.
+   * Center it around zero, in the -8..+8 usec range. */
+  last_packet_timestamp -= US_TO_RTIMERTICKS(8);
+ return last_packet_timestamp;
+}
 
 static void
 set_poll_mode(bool enable)
@@ -269,8 +285,8 @@ set_poll_mode(bool enable)
   if(poll_mode) {
     rf230_set_rpc(0x0); /* Disbable all RPC features */
     radio_set_trx_state(RX_ON);
-    hal_subregister_write(SR_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
-    /* hal_register_write(RG_IRQ_MASK, 0xFF); */
+    /* hal_subregister_write(SR_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK); */
+    hal_register_write(RG_IRQ_MASK, 0xFF);
   } else {
     /* Initialize and enable interrupts */
     rf230_set_rpc(0xFF); /* Enable all RPC features. Only XRFR2 radios */
@@ -829,10 +845,14 @@ flushrx(void)
   }
   /* If another packet has been buffered, schedule another receive poll */
   if (rxframe[rxframe_head].length) {
-    rf230_interrupt();
+    rf230_interrupt(0);
   }
   else {
     rf230_pending = 0;
+  }
+  if(poll_mode) {
+    rf230_pending = 0;
+    return;
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -1054,7 +1074,7 @@ calibrate_rc_osc_32k(void)
     AVR_LEAVE_CRITICAL_REGION();
 }
 #endif
-/*---------------------------------------------------------------------------*/
+
 int
 rf230_init(void)
 {
@@ -1127,8 +1147,10 @@ void rf230_warm_reset(void) {
   DDRB  &= ~(1<<7);
 #endif
   
-  hal_subregister_write(SR_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
+  // hal_subregister_write(SR_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
+  hal_register_write(RG_IRQ_MASK, 0xFF);
 
+#if 0
   /* Set up number of automatic retries 0-15
    * (0 implies PLL_ON sends instead of the extended TX_ARET mode */
   hal_subregister_write(SR_MAX_FRAME_RETRIES,
@@ -1138,10 +1160,12 @@ void rf230_warm_reset(void) {
   hal_subregister_write(SR_MAX_CSMA_RETRIES, RF230_CONF_CSMA_RETRIES );//highest allowed retries
   hal_register_write(RG_CSMA_BE, 0x80);       //min backoff exponent 0, max 8 (highest allowed)
   hal_register_write(RG_CSMA_SEED_0,hal_register_read(RG_PHY_RSSI) );//upper two RSSI reg bits RND_VALUE are random in rf231
+#endif
+
  // hal_register_write(CSMA_SEED_1,42 );
 
   /* CCA Mode Mode 1=Energy above threshold  2=Carrier sense only  3=Both 0=Either (RF231 only) */
-//hal_subregister_write(SR_CCA_MODE,1);  //1 is the power-on default
+  //hal_subregister_write(SR_CCA_MODE,1);  //1 is the power-on default
 
   /* Carrier sense threshold (not implemented in RF230 or RF231) */
 // hal_subregister_write(SR_CCA_CS_THRES,1);
@@ -1181,6 +1205,15 @@ void rf230_warm_reset(void) {
   hal_subregister_write(SR_TX_AUTO_CRC_ON, 0);
 #else
   hal_subregister_write(SR_TX_AUTO_CRC_ON, 1);
+#endif
+
+#if defined(__AVR_ATmega128RFR2__) || defined(__AVR_ATmega256RFR2__)
+  /* Enable PLL TX Filter */
+#if RF230_CONF_PLL_TX_FILTER
+  hal_subregister_write(SR_PLL_FLT, 1);
+#else
+  hal_subregister_write(SR_PLL_FLT, 0);
+#endif
 #endif
 
 /* Limit tx power for testing miniature Raven mesh */
@@ -1353,6 +1386,7 @@ rf230_transmit(unsigned short payload_len)
   }
 
   if (tx_result==RADIO_TX_OK) {
+
     RIMESTATS_ADD(lltx);
 #if NETSTACK_CONF_WITH_RIME
     if(packetbuf_attr(PACKETBUF_ATTR_RELIABLE))
@@ -1435,6 +1469,18 @@ rf230_prepare(const void *payload, unsigned short payload_len)
   pbuf+=TIMESTAMP_LEN;
 #endif
 /*------------------------------------------------------------*/  
+#if 0
+  // Wait until PLL ON state
+  time = RTIMER_NOW() + RTIMER_SECOND;//  / 1000;
+  do {
+    reg = radio_get_trx_state();
+      
+      // Check for block
+      if (RTIMER_CLOCK_LT(time, RTIMER_NOW())) {
+	  return RADIO_TX_ERR;
+	}
+    } while (reg != PLL_ON);
+#endif
 
 #ifdef RF230BB_HOOK_TX_PACKET
 #if !RF230_CONF_CHECKSUM
@@ -1456,6 +1502,7 @@ static int
 rf230_send(const void *payload, unsigned short payload_len)
 {
 	int ret = 0;
+
 
 #ifdef RF230BB_HOOK_IS_SEND_ENABLED
 	if(!RF230BB_HOOK_IS_SEND_ENABLED()) {
@@ -1524,11 +1571,12 @@ rf230_get_channel(void)
 void
 rf230_set_channel(uint8_t c)
 {
- /* Wait for any transmission to end. */
   PRINTF("rf230: Set Channel %u\n",c);
-  rf230_waitidle();
+  /* Initialize new chan hard for TSCH etc */
+  radio_off();
   channel=c;
   hal_subregister_write(SR_CHANNEL, c);
+  radio_on();
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -1588,10 +1636,21 @@ static volatile rtimer_clock_t interrupt_time;
 static volatile int interrupt_time_set;
 #endif /* RF230_CONF_TIMESTAMPS */
 int
-rf230_interrupt(void)
+rf230_interrupt(uint8_t irq)
 {
   /* Poll the receive process, unless the stack thinks the radio is off */
+
+#define IRQ_AWAKE          0x80
+#define IRQ_TX_END         0x40
+#define IRQ_AMI            0x20
+#define IRQ_CCA_ED_DONE    0x10
+#define IRQ_3_TRX_END      0x08
+#define IRQ_2_RX_START     0x04
+#define IRQ_1_PLL_UNLOCK   0x02
+#define IRQ_0_PLL_LOCK     0x01
+
 #if RADIOALWAYSON
+  // CHECK +if (1 || RF230_receive_on) {
 if (RF230_receive_on) {
   DEBUGFLOW('+');
 #endif
@@ -1599,6 +1658,13 @@ if (RF230_receive_on) {
   interrupt_time = timesynch_time();
   interrupt_time_set = 1;
 #endif /* RF230_CONF_TIMESTAMPS */
+
+  //irq = hal_register_read(RG_SCIRQS);
+  //hal_register_write(RG_SCOCR1LL, 160);
+
+  if(poll_mode) {
+    return 1;
+  }
 
   process_poll(&rf230_process);
   
@@ -1617,6 +1683,53 @@ if (RF230_receive_on) {
 #endif
   return 1;
 }
+
+ISR(TRX24_RX_START_vect)
+{
+/* Save RSSI for this packet if not in extended mode, scaling to 1dB resolution */
+#if !RF230_CONF_AUTOACK
+    rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
+#endif
+    get_rx_packet_timestamp();
+    if(!poll_mode) 
+      rf230_interrupt(2);
+}
+
+/* Received packet interrupt */
+ISR(TRX24_RX_END_vect)
+{
+/* Get the rssi from ED if extended mode */
+#if RF230_CONF_AUTOACK
+	rf230_last_rssi=hal_register_read(RG_PHY_ED_LEVEL);
+#endif
+
+/* Buffer the frame and call rf230_interrupt to schedule poll for rf230 receive process */
+/* Is a ram buffer available? */
+	if (rxframe[rxframe_tail].length) {DEBUGFLOW('0');} else /*DEBUGFLOW('1')*/;
+
+#ifdef RF230_MIN_RX_POWER		 
+/* Discard packets weaker than the minimum if defined. This is for testing miniature meshes */
+/* This does not prevent an autoack. TODO:rfa1 radio can be set up to not autoack weak packets */
+	if (rf230_last_rssi >= RF230_MIN_RX_POWER) {
+#else
+	if (1) {
+#endif
+//		DEBUGFLOW('2');
+		hal_frame_read(&rxframe[rxframe_tail]);
+		rxframe_tail++;if (rxframe_tail >= RF230_CONF_RX_BUFFERS) rxframe_tail=0;
+		rf230_interrupt(2);
+
+		if(poll_mode) {
+		  rf230_pending = 1;
+		}
+	}
+}
+
+/* PLL has locked, either from a transition out of TRX_OFF or a channel change while on */
+ISR(TRX24_PLL_LOCK_vect)
+{
+}
+
 /*---------------------------------------------------------------------------*/
 /* Process to handle input packets
  * Receive interrupts cause this process to be polled
@@ -1716,6 +1829,7 @@ rf230_read(void *buf, unsigned short bufsize)
 #if RF230_CONF_TIMESTAMPS
   struct timestamp t;
 #endif
+
 #if RF230_INSERTACK
 /* Return an ACK to the mac layer */
   if(ack_pending && bufsize == 3){	

@@ -617,7 +617,7 @@ hal_sram_write(uint8_t address, uint8_t length, uint8_t *data)
 void RADIO_VECT(void);
 #else  /* !DOXYGEN */
 /* These link to the RF230BB driver in rf230.c */
-void rf230_interrupt(void);
+void rf230_interrupt(uint8_t s);
 
 extern hal_rx_frame_t rxframe[RF230_CONF_RX_BUFFERS];
 extern uint8_t rxframe_head,rxframe_tail;
@@ -635,48 +635,6 @@ volatile char rf230interruptflag;
 /* The atmega128rfa1 has individual interrupts for the integrated radio'
  * Whichever are enabled by the RF230 driver must be present even if not used!
  */
-/* Received packet interrupt */
-ISR(TRX24_RX_END_vect)
-{
-/* Get the rssi from ED if extended mode */
-#if RF230_CONF_AUTOACK
-	rf230_last_rssi=hal_register_read(RG_PHY_ED_LEVEL);
-#endif
-
-/* Buffer the frame and call rf230_interrupt to schedule poll for rf230 receive process */
-/* Is a ram buffer available? */
-	if (rxframe[rxframe_tail].length) {DEBUGFLOW('0');} else /*DEBUGFLOW('1')*/;
-
-#ifdef RF230_MIN_RX_POWER		 
-/* Discard packets weaker than the minimum if defined. This is for testing miniature meshes */
-/* This does not prevent an autoack. TODO:rfa1 radio can be set up to not autoack weak packets */
-	if (rf230_last_rssi >= RF230_MIN_RX_POWER) {
-#else
-	if (1) {
-#endif
-//		DEBUGFLOW('2');
-		hal_frame_read(&rxframe[rxframe_tail]);
-		rxframe_tail++;if (rxframe_tail >= RF230_CONF_RX_BUFFERS) rxframe_tail=0;
-		rf230_interrupt();
-	}
-}
-/* Preamble detected, starting frame reception */
-ISR(TRX24_RX_START_vect)
-{
-//	DEBUGFLOW('3');
-/* Save RSSI for this packet if not in extended mode, scaling to 1dB resolution */
-#if !RF230_CONF_AUTOACK
-    rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
-#endif
-    rf230_get_last_rx_packet_timestamp();
-}
-
-/* PLL has locked, either from a transition out of TRX_OFF or a channel change while on */
-ISR(TRX24_PLL_LOCK_vect)
-{
-//	DEBUGFLOW('4');
-}
-
 /* PLL has unexpectedly unlocked */
 ISR(TRX24_PLL_UNLOCK_vect)
 {
@@ -697,6 +655,7 @@ ISR(TRX24_TX_END_vect)
 {
 //	DEBUGFLOW('7');
   rf230_txendwait=0;
+  rf230_interrupt(2);
 }
 
 /* Frame address has matched ours */

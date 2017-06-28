@@ -94,6 +94,7 @@
 
 /*******************************************************/
 /******************* Configure TSCH ********************/
+
 /*******************************************************/
 
 /* TSCH logging. 0: disabled. 1: basic log. 2: with delayed
@@ -184,5 +185,14 @@
 #if CONTIKI_TARGET_COOJA
 #define COOJA_CONF_SIMULATE_TURNAROUND 0
 #endif /* CONTIKI_TARGET_COOJA */
+
+#if CONTIKI_TARGET_AVR_RSS2
+#define TSCH_CONF_ADAPTIVE_TIMESYNC 0
+#define TSCH_CONF_RADIO_ON_DURING_TIMESLOT 0
+#define WITH_SEND_CCA 0
+#define RF230_CONF_AUTOACK 0
+#define TSCH_CONF_TIMESYNC_REMOVE_JITTER 0
+#define RF230_CONF_AUTORETRIES 0
+#endif
 
 #endif /* __PROJECT_CONF_H__ */

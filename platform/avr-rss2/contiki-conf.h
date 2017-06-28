@@ -39,6 +39,8 @@
 #ifndef CONTIKI_CONF_H_
 #define CONTIKI_CONF_H_
 
+#include <stdint.h>
+
 /* include the project config */
 /* PROJECT_CONF_H might be defined in the project Makefile */
 #ifdef PROJECT_CONF_H
@@ -52,7 +54,30 @@
 #define F_CPU          8000000UL
 #endif
 
-#include <stdint.h>
+/* Delay between GO signal and SFD */
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313))
+/* Delay between GO signal and start listening */
+#define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(204))
+/* Delay between the SFD finishes arriving and it is detected in software */
+#define RADIO_DELAY_BEFORE_DETECT ((unsigned)US_TO_RTIMERTICKS(40))
+
+#if NETSTACK_CONF_MAC==tschmac_driver
+#define WITH_SEND_CCA 0
+#define RF230_CONF_AUTOACK 0
+#define RF230_CONF_AUTORETRIES 0
+#endif
+
+#ifndef TSCH_CONF_RX_WAIT
+#define TSCH_CONF_RX_WAIT 1800
+#endif
+
+#define TSCH_DEBUG 1
+
+#if TSCH_DEBUG
+#define TSCH_DEBUG_INIT() do {DDRD |= (1<<PD6);} while(0);
+#define TSCH_DEBUG_SLOT_START() do{ PORTD |= (1<<PD6); } while(0);
+#define TSCH_DEBUG_SLOT_END() do{ PORTD &= ~(1<<PD6); } while(0);
+#endif /* TSCH_DEBUG */
 
 #ifndef NETSTACK_CONF_MAC
 #define NETSTACK_CONF_MAC     csma_driver
@@ -83,6 +108,17 @@
 #define RF230_CONF_AUTOACK        1
 #endif
 
+/*
+   TX Filter. Be careful. This setting impacts RF-emission. And might violate CE, FCC
+   regulations. RS boards has separate bandpass filter and conform to CE with any setting.
+ */
+#ifndef RF230_CONF_PLL_TX_FILTER
+#define RF230_CONF_PLL_TX_FILTER    0
+#endif
+
+#define TIMESYNCH_CONF_ENABLED 0
+#define RF230_CONF_TIMESTAMPS 0
+
 #define MCUCSR  MCUSR
 
 /* The AVR tick interrupt usually is done with an 8 bit counter around 128 Hz.
@@ -110,6 +146,8 @@ void clock_adjust_ticks(clock_time_t howmany);
 #ifndef RS232_BAUDRATE
 #define RS232_BAUDRATE USART_BAUD_38400
 #endif 
+
+#define RS232_CONF_TX_INTERRUPTS 1
 
 /* Pre-allocated memory for loadable modules heap space (in bytes)*/
 /* Default is 4096. Currently used only when elfloader is present. Not tested on Raven */
@@ -162,7 +200,9 @@ typedef unsigned short uip_stats_t;
 /* TX routine does automatic cca and optional backoffs */
 #define RDC_CONF_HARDWARE_CSMA   1
 /* Allow MCU sleeping between channel checks */
-#define RDC_CONF_MCU_SLEEP         1
+#ifndef RDC_CONF_MCU_SLEEP
+#define RDC_CONF_MCU_SLEEP       1
+#endif
 
 #if NETSTACK_CONF_WITH_IPV6
 
@@ -271,7 +311,11 @@ typedef unsigned short uip_stats_t;
 
 /* A 0 here means non-extended mode; 1 means extended mode with no retry, >1 for retrys */
 /* Contikimac strobes on its own, but hardware retries are faster */
+#if NETSTACK_CONF_MAC==tschmac_driver
+#define RF230_CONF_FRAME_RETRIES  0
+#else
 #define RF230_CONF_FRAME_RETRIES  1
+#endif
 /* Long csma backoffs will compromise radio cycling; set to 0 for 1 csma */
 #define RF230_CONF_CSMA_RETRIES   0
 #define SICSLOWPAN_CONF_FRAG      1
@@ -322,6 +366,10 @@ typedef unsigned short uip_stats_t;
 #else
 /* #error Network configuration not specified! */
 #endif /* Network setup */
+
+#ifndef UIP_CONF_MAX_ROUTES
+#define UIP_CONF_MAX_ROUTES    4
+#endif
 
 #ifndef QUEUEBUF_CONF_NUM
 #define QUEUEBUF_CONF_NUM         15

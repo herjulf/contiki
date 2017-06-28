@@ -183,6 +183,17 @@ PROCESS_THREAD(node_process, ev, data)
   unsigned char coordinator_mac[8] = { 0xc1, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
 
   coordinator_candidate = (memcmp(node_mac, coordinator_mac, 8) == 0);
+
+#elif CONTIKI_TARGET_AVR_RSS2
+  unsigned char node_mac[8];
+  //unsigned char coordinator_mac[8] = { 0xfc, 0xc2, 0x3d, 0x00, 0x00, 0x00, 0x37, 0xdb }; //NSLAB
+  unsigned char coordinator_mac[8] = { 0xfc, 0xc2, 0x3d, 0x00, 0x00, 0x01, 0x83, 0x7e };
+
+  memcpy(node_mac, &uip_lladdr.addr, sizeof(linkaddr_t));
+
+  if(memcmp(node_mac, coordinator_mac, 8) == 0) {
+      coordinator_candidate = 1;
+  }
 #elif CONTIKI_TARGET_COOJA
   coordinator_candidate = (node_id == 1);
 #endif

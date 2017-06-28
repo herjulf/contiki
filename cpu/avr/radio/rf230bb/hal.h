@@ -380,8 +380,8 @@ uint8_t hal_subregister_read( uint16_t address, uint8_t mask, uint8_t position )
 void hal_subregister_write( uint16_t address, uint8_t mask, uint8_t position,
                             uint8_t value );
 
-//#define hal_register_write(address, value) _SFR_MEM8((uint16_t)address)=value
-#define hal_register_write(address, value) address=value
+#define hal_register_write(address, value) _SFR_MEM8((uint16_t)address)=value
+//#define hal_register_write(address, value) address=value
 //#define hal_subregister_read( address, mask, position ) (_SFR_MEM8((uint16_t)address)&mask)>>position
 //#define hal_subregister_read1( address, mask, position ) (address&mask)>>position
 //#define hal_subregister_write( address, mask, position, value ) address=(address<<position)&mask
