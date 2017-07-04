@@ -37,7 +37,7 @@
 
 /* Set to run orchestra */
 #ifndef WITH_ORCHESTRA
-#define WITH_ORCHESTRA 0
+#define WITH_ORCHESTRA 1
 #endif /* WITH_ORCHESTRA */
 
 /* Set to enable TSCH security */
@@ -190,11 +190,9 @@
 #define TSCH_CONF_RADIO_ON_DURING_TIMESLOT 0
 #define RF230_CONF_AUTOACK 0
 #define RF230_CONF_AUTORETRIES 0
-/* #define TSCH_CONF_RX_WAIT 4500 */
 #define TSCH_CONF_ADAPTIVE_TIMESYNC 0
 #define TSCH_CONF_HW_FRAME_FILTERING 0
 #define TSCH_CONF_RESYNC_WITH_SFD_TIMESTAMPS 0
-#define TSCH_CONF_EB_PERIOD    (1 * CLOCK_SECOND)
 #endif
 
 #endif /* __PROJECT_CONF_H__ */

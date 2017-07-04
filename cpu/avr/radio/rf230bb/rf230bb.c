@@ -7,6 +7,9 @@
  *  David Kopf dak664@embarqmail.com
  *  Ivan Delamer delamer@ieee.com
  *
+ *  Major rework for TSCH including MAC Symbol Counter and new API etc.
+ *  Robert Olsson  KTH & Radio Sensors AB
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -273,26 +276,7 @@ volatile uint32_t last_packet_timestamp = 0;
 
 uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
 
-static inline uint32_t msc_read32(volatile uint8_t *hh,
-		volatile uint8_t *hl,
-		volatile uint8_t *lh,
-		volatile uint8_t *ll)
-{
-	union {
-		uint8_t a[4];
-		uint32_t rv;
-	}
-	x;
-
-	x.a[0] = *ll;
-	x.a[1] = *lh;
-	x.a[2] = *hl;
-	x.a[3] = *hh;
-
-	return x.rv;
-}
-
-static uint32_t msc_read32_1(volatile uint8_t *hh)
+static uint32_t msc_read32(volatile uint8_t *hh)
 {
   union {
     uint8_t a[4];
@@ -319,27 +303,32 @@ void msc_write32(volatile uint8_t *hh, uint32_t val)
   *(hh-3)  = x.a[0]; 
 }
 
-uint32_t msc_get_sfd_timestamp(void) 
-{
-  return msc_read32( (volatile uint8_t *) RG_SCTSRHH, 
-		       (volatile uint8_t *) RG_SCTSRHL, 
-		       (volatile uint8_t *) RG_SCTSRLH, 
-		       (volatile uint8_t *) RG_SCTSRLL);
-}
-
-uint32_t msc_get_counter_1(void) 
-{
-  return msc_read32_1( (volatile uint8_t *) RG_SCCNTHH);
-}
-
 uint32_t msc_get_counter(void) 
 {
-  while( hal_subregister_read(SR_SCBSY)); 
+  //while( hal_subregister_read(SR_SCBSY)); 
+  return msc_read32( (volatile uint8_t *) RG_SCCNTHH);
+}
 
-  return msc_read32( (volatile uint8_t *) RG_SCCNTHH, 
-		       (volatile uint8_t *) RG_SCCNTHL, 
-		       (volatile uint8_t *) RG_SCCNTLH, 
-		       (volatile uint8_t *) RG_SCCNTLL);
+uint32_t msc_get_sfd_timestamp(void) 
+{
+  return msc_read32( (volatile uint8_t *) RG_SCTSRHH);
+}
+
+uint32_t msc_get_ocr1_counter(void) 
+{
+  //while( hal_subregister_read(SR_SCBSY)); 
+
+  return msc_read32( (volatile uint8_t *) RG_SCOCR1HH);
+}
+
+uint32_t msc_get_ocr2_counter(void) 
+{
+  return msc_read32( (volatile uint8_t *) RG_SCOCR2HH);
+}
+
+uint32_t msc_get_ocr3_counter(void) 
+{
+  return msc_read32( (volatile uint8_t *) RG_SCOCR3HH);
 }
 
 void msc_sync_counter(void)
@@ -347,38 +336,8 @@ void msc_sync_counter(void)
   while( hal_subregister_read(SR_SCBSY));
 }
 
-uint32_t msc_get_ocr1_counter(void) 
-{
-  while( hal_subregister_read(SR_SCBSY)); 
-
-  return msc_read32( (volatile uint8_t *) RG_SCOCR1HH, 
-		       (volatile uint8_t *) RG_SCOCR1HL, 
-		       (volatile uint8_t *) RG_SCOCR1LH, 
-		       (volatile uint8_t *) RG_SCOCR1LL);
-}
-
-uint32_t msc_get_ocr2_counter(void) 
-{
-  return msc_read32( (volatile uint8_t *) RG_SCOCR2HH, 
-		       (volatile uint8_t *) RG_SCOCR2HL, 
-		       (volatile uint8_t *) RG_SCOCR2LH, 
-		       (volatile uint8_t *) RG_SCOCR2LL);
-}
-
-uint32_t msc_get_ocr3_counter(void) 
-{
-  return msc_read32( (volatile uint8_t *) RG_SCOCR3HH, 
-		       (volatile uint8_t *) RG_SCOCR3HL, 
-		       (volatile uint8_t *) RG_SCOCR3LH, 
-		       (volatile uint8_t *) RG_SCOCR3LL);
-}
-
-
-#define SYS_CTRL_16MHZ               16000000
-#define RADIO_TO_RTIMER(X) ((uint32_t)((uint64_t)(X) * RTIMER_ARCH_SECOND / SYS_CTRL_16MHZ))
-
 /*---------------------------------------------------------------------------*/
-static rtimer_clock_t
+static inline rtimer_clock_t
 get_rx_packet_timestamp(void)
 {
   /* Save SFD timestamp */
@@ -402,13 +361,8 @@ set_poll_mode(bool enable)
 {
   poll_mode = enable;
   if(poll_mode) {
-    rf230_set_rpc(0x0); /* Disbable all RPC features */
     radio_set_trx_state(RX_ON);
-    ////hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
-    hal_register_write(RG_IRQ_MASK, 0xFF);
   } else {
-    /* Initialize and enable interrupts */
-    rf230_set_rpc(0xFF); /* Enable all RPC features. Only XRFR2 radios */
     radio_set_trx_state(RX_AACK_ON);
   }
 }
@@ -1142,7 +1096,7 @@ msc_init(void)
   /* Counter REG */
   i = 0;
   i |= 0x80; // Counter Sync.
-  //i |= 0x40; // Disable Manual Beacon
+  /* i |= 0x40;  Disable Manual Beacon */
   i |= 0x20; // Counter enable
   i |= 0x10; // RTC clock
   //i |= 0x08; // Auto timstamp Beacon, SFD
@@ -1154,10 +1108,6 @@ msc_init(void)
   //hal_subregister_write(SR_SCCR1_CLKDIV, SCCKDIV_62_5k);
   //hal_subregister_write(SR_SCCR1_SCBTSM , 1);
 
-  /* ocr1 */ 
-  msc_write32( (volatile uint8_t *) RG_SCOCR1HH, 160); 
-  /* ocr2 */ 
-  msc_write32( (volatile uint8_t *) RG_SCOCR2HH, 160); 
 #ifdef BACKOFF
   hal_subregister_write(SR_SCCR1_SCENBO, 1);  // Enable Back off counter
 #endif
@@ -1170,11 +1120,11 @@ msc_init(void)
 #ifdef BACKOFF
    i |= 0x10; // Backoff mask 640 us IRQ
 #endif
-   //i |= 0x08; // Counter overflow mask
+  /* i |= 0x08; // Counter overflow mask */
   i |= 0x01; // Compare 1 counter mask
-  i |= 0x02; // Compare 2 counter mask
-  i |= 0x04; // Compare 3 counter mask
-  //i |= 0x04; // Compare 3 counter mask
+  /* i |= 0x02; // Compare 2 counter mask */
+  /* i |= 0x04; // Compare 3 counter mask */
+  /* i |= 0x04; // Compare 3 counter mask */
   hal_subregister_write(SR_SCIRQM, i);
 }
 
@@ -1251,8 +1201,7 @@ void rf230_warm_reset(void) {
   DDRB  &= ~(1<<7);
 #endif
   
-  //hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
-  hal_register_write(RG_IRQ_MASK, 0xFF);
+  hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
 
 #if 0
   /* Set up number of automatic retries 0-15
@@ -1792,38 +1741,33 @@ ISR(SCNT_OVFL_vect)
 {
 }
 
-#define SEC_CNT  1000000/(320*16) /* 97 */
-
-extern volatile unsigned long seconds;
-
-static uint8_t cmp1_cnt;
-
-ISR(SCNT_CMP1_vect)
-{
-  uint32_t i = msc_get_counter();
-
-  if(cmp1_cnt++ == SEC_CNT) {
-    cmp1_cnt = 0;
-    leds_on(LEDS_RED);
-    //TSCH_CLOCK();
-    //seconds++;
-  }
-  i += 320l; /* 10.24 mS */
-  msc_write32( (volatile uint8_t *) RG_SCOCR1HH, i); 
- }
-
 void
 rtimer_arch_schedule(rtimer_clock_t t)
 {
-  msc_write32( (volatile uint8_t *) RG_SCOCR2HH, t); 
+  msc_write32( (volatile uint8_t *) RG_SCOCR1HH, t); 
+}
+
+ISR(SCNT_CMP1_vect)
+{
+  rtimer_wait = 0;
+  watchdog_periodic();
+  /* Allow nested interrupts
+     Not nice but as tsch is expected
+     to run under an interrupt context
+     we need to open for some radio 
+     interrupts as SFD time-stamping etc.
+     
+     Seems using the Compare units 2,3
+     with this design can cause races.
+   */
+
+  sei(); 
+
+  rtimer_run_next();
 }
 
 ISR(SCNT_CMP2_vect)
 {
-  rtimer_wait = 0;
-  watchdog_periodic();
-  sei(); /* Allow nested interrupts */
-  rtimer_run_next();
 }
 
 ISR(SCNT_CMP3_vect)

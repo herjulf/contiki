@@ -41,6 +41,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+#include "dev/leds.h"
 #include <dev/watchdog.h>
 #include <stdio.h>
 #include "contiki.h"
@@ -82,20 +83,7 @@ rtimer_arch_sleep(rtimer_clock_t howlong)
 
   rtimer_wait = 1;
   sei();
-  while(rtimer_wait)
+while(rtimer_wait)
     sleep_mode();
   watchdog_start();
-}
-
-ISR
-(INT0_vect)
-{
-
-  //#include "dev/leds.h"
-
-  //leds_on(LEDS_RED);
-
-  //EIMSK &= ~(1 << PCIE0);
-
-  //rtimer_run_next();
 }
