@@ -144,8 +144,6 @@ uint8_t ack_pending,ack_seqnum;
 #warning RF230 Untested Configuration!
 #endif
 
-static rtimer_clock_t rf230_last_rx_packet_timestamp;
-
 struct timestamp {
   uint16_t time;
   uint8_t authority_level;
@@ -256,10 +254,9 @@ static int rf230_send(const void *data, unsigned short len);
 static int rf230_receiving_packet(void);
 static int rf230_pending_packet(void);
 static int rf230_cca(void);
-static rtimer_clock_t get_rx_packet_timestamp(void);
 
 /* SFD timestamp in RTIMER ticks */
-static volatile uint32_t last_packet_timestamp = 0;
+static volatile rtimer_clock_t rf230_last_rx_packet_timestamp = 0;
 
 uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
 
@@ -267,15 +264,17 @@ uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
 #define RADIO_TO_RTIMER(X) ((uint32_t)((uint64_t)(X) * RTIMER_ARCH_SECOND / SYS_CTRL_16MHZ))
 
 /*---------------------------------------------------------------------------*/
-static rtimer_clock_t
-get_rx_packet_timestamp(void)
+static inline void
+rf230_get_last_rx_packet_timestamp(void)
 {
   /* Save SFD timestamp, converted from radio timer to RTIMER */
-  last_packet_timestamp = RTIMER_NOW();
+  ////rf230_last_rx_packet_timestamp = RTIMER_NOW();
   /* The remaining measured error is typically in range 0..16 usec.
    * Center it around zero, in the -8..+8 usec range. */
-  last_packet_timestamp -= US_TO_RTIMERTICKS(8);
- return last_packet_timestamp;
+  ///
+  rf230_last_rx_packet_timestamp = RTIMER_NOW();
+  rf230_last_rx_packet_timestamp -= US_TO_RTIMERTICKS(8);
+  return;
 }
 
 static void
@@ -1620,13 +1619,6 @@ rf230_set_pan_addr(unsigned pan,
   }
 }
 
-/* From ISR context */
-void
-rf230_get_last_rx_packet_timestamp(void)
-{
-    rf230_last_rx_packet_timestamp = RTIMER_NOW();
-}
-
 /*---------------------------------------------------------------------------*/
 /*
  * Interrupt leaves frame intact in FIFO.
@@ -1690,7 +1682,7 @@ ISR(TRX24_RX_START_vect)
 #if !RF230_CONF_AUTOACK
     rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
 #endif
-    get_rx_packet_timestamp();
+    rf230_get_last_rx_packet_timestamp();
     if(!poll_mode) 
       rf230_interrupt(2);
 }
