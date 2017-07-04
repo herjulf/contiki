@@ -73,9 +73,10 @@
 #define RTIMERTICKS_TO_US_64(T)  ((uint32_t)(((uint64_t)(T) * 1000000 + ((RTIMER_ARCH_SECOND) / 2)) / (RTIMER_ARCH_SECOND)))
 
 #ifdef TCNT3
-uint16_t rtimer_arch_now(void);
+rtimer_clock_t rtimer_arch_now(void);
 #elif RTIMER_ARCH_PRESCALER
-#define rtimer_arch_now() (TCNT1)
+//#define rtimer_arch_now() (TCNT1)
+rtimer_clock_t rtimer_arch_now(void);
 #else
 #define rtimer_arch_now() (0)
 #endif

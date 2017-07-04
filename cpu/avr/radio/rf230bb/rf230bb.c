@@ -6,6 +6,9 @@
  *
  *  David Kopf dak664@embarqmail.com
  *  Ivan Delamer delamer@ieee.com
+
+ *  Major rework for TSCH including MAC Symbol Counter and new API etc.
+ *  Robert Olsson  KTH & Radio Sensors AB
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -144,7 +147,11 @@ uint8_t ack_pending,ack_seqnum;
 #warning RF230 Untested Configuration!
 #endif
 
+/* SFD timestamp in RTIMER ticks */
 static rtimer_clock_t rf230_last_rx_packet_timestamp;
+
+volatile uint8_t rtimer_wait;
+
 
 struct timestamp {
   uint16_t time;
@@ -223,11 +230,23 @@ volatile uint8_t rf230_wakewait, rf230_txendwait, rf230_ccawait;
 
 uint8_t volatile rf230_pending;
 
+/* Note!
+   The values for new AtMegaXXXRF is according to application note
+   AT02601 and are only valid when decoupling capacitors CB1/CB3
+   are 100nF
+*/
+
 /* RF230 hardware delay times, from datasheet */
 typedef enum{
+#if defined(__AVR_ATmega128RFA1__) || defined(__AVR_ATmega128RFR2__) || defined(__AVR_ATmega256RFR2__)
+    TIME_TO_ENTER_P_ON               = 330, /**<  Transition time from VCC is applied to P_ON - most favorable case! */
+    TIME_P_ON_TO_TRX_OFF             = 210, /**<  Transition time from P_ON to TRX_OFF. */
+    TIME_SLEEP_TO_TRX_OFF            = 240, /**<  Transition time from SLEEP to TRX_OFF. */
+#else
     TIME_TO_ENTER_P_ON               = 510, /**<  Transition time from VCC is applied to P_ON - most favorable case! */
     TIME_P_ON_TO_TRX_OFF             = 510, /**<  Transition time from P_ON to TRX_OFF. */
     TIME_SLEEP_TO_TRX_OFF            = 880, /**<  Transition time from SLEEP to TRX_OFF. */
+#endif
     TIME_RESET                       = 6,   /**<  Time to hold the RST pin low during reset */
     TIME_ED_MEASUREMENT              = 140, /**<  Time it takes to do a ED measurement. */
     TIME_CCA                         = 140, /**<  Time it takes to do a CCA. */
@@ -235,7 +254,11 @@ typedef enum{
     TIME_FTN_TUNING                  = 25,  /**<  Maximum time it should take to do the filter tuning. */
     TIME_NOCLK_TO_WAKE               = 6,   /**<  Transition time from *_NOCLK to being awake. */
     TIME_CMD_FORCE_TRX_OFF           = 1,   /**<  Time it takes to execute the FORCE_TRX_OFF command. */
+#if defined(__AVR_ATmega128RFA1__) || defined(__AVR_ATmega128RFR2__) || defined(__AVR_ATmega256RFR2__)
+    TIME_TRX_OFF_TO_PLL_ACTIVE       = 80, /** 110 for 1uF <  Transition time from TRX_OFF to: RX_ON, PLL_ON, TX_ARET_ON and RX_AACK_ON. */
+#else
     TIME_TRX_OFF_TO_PLL_ACTIVE       = 180, /**<  Transition time from TRX_OFF to: RX_ON, PLL_ON, TX_ARET_ON and RX_AACK_ON. */
+#endif
     TIME_STATE_TRANSITION_PLL_ACTIVE = 1,   /**<  Transition time from PLL active state to another. */
 }radio_trx_timing_t;
 /*---------------------------------------------------------------------------*/
@@ -256,26 +279,82 @@ static int rf230_send(const void *data, unsigned short len);
 static int rf230_receiving_packet(void);
 static int rf230_pending_packet(void);
 static int rf230_cca(void);
-static rtimer_clock_t get_rx_packet_timestamp(void);
-
-/* SFD timestamp in RTIMER ticks */
-static volatile uint32_t last_packet_timestamp = 0;
 
 uint8_t rf230_last_correlation,rf230_last_rssi,rf230_smallest_rssi;
+
+static uint32_t msc_read32(volatile uint8_t *hh)
+{
+  union {
+    uint8_t a[4];
+    uint32_t rv;
+  } x;
+
+  x.a[0] = *(hh-3);
+  x.a[1] = *(hh-2);
+  x.a[2] = *(hh-1);
+  x.a[3] = *(hh);
+  return x.rv;
+}
+
+void msc_write32(volatile uint8_t *hh, uint32_t val)
+{
+  union {
+    uint8_t a[4];
+    uint32_t v;
+  } x;
+  x.v = val;
+  *hh = x.a[3]; // hh
+  *(hh-1)  = x.a[2];
+  *(hh-2)  = x.a[1];
+  *(hh-3)  = x.a[0];
+}
+
+uint32_t msc_get_counter(void)
+{
+  //while( hal_subregister_read(SR_SCBSY));
+  return msc_read32( (volatile uint8_t *) RG_SCCNTHH);
+}
+
+uint32_t msc_get_sfd_timestamp(void)
+{
+  return msc_read32( (volatile uint8_t *) RG_SCTSRHH);
+}
+
+uint32_t msc_get_ocr1_counter(void)
+{
+  //while( hal_subregister_read(SR_SCBSY));
+
+  return msc_read32( (volatile uint8_t *) RG_SCOCR1HH);
+}
+
+uint32_t msc_get_ocr2_counter(void)
+{
+  return msc_read32( (volatile uint8_t *) RG_SCOCR2HH);
+}
+
+uint32_t msc_get_ocr3_counter(void)
+{
+  return msc_read32( (volatile uint8_t *) RG_SCOCR3HH);
+}
+
+void msc_sync_counter(void)
+{
+  while( hal_subregister_read(SR_SCBSY));
+}
 
 #define SYS_CTRL_16MHZ               16000000
 #define RADIO_TO_RTIMER(X) ((uint32_t)((uint64_t)(X) * RTIMER_ARCH_SECOND / SYS_CTRL_16MHZ))
 
 /*---------------------------------------------------------------------------*/
-static rtimer_clock_t
-get_rx_packet_timestamp(void)
+static inline rtimer_clock_t
+rf230_get_rx_packet_timestamp(void)
 {
   /* Save SFD timestamp, converted from radio timer to RTIMER */
-  last_packet_timestamp = RTIMER_NOW();
+  rf230_last_rx_packet_timestamp = RTIMER_NOW();
   /* The remaining measured error is typically in range 0..16 usec.
    * Center it around zero, in the -8..+8 usec range. */
-  last_packet_timestamp -= US_TO_RTIMERTICKS(8);
- return last_packet_timestamp;
+  rf230_last_rx_packet_timestamp -= US_TO_RTIMERTICKS(8);
+ return rf230_last_rx_packet_timestamp;
 }
 
 static void
@@ -283,13 +362,10 @@ set_poll_mode(bool enable)
 {
   poll_mode = enable;
   if(poll_mode) {
-    rf230_set_rpc(0x0); /* Disbable all RPC features */
     radio_set_trx_state(RX_ON);
-    /* hal_subregister_write(SR_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK); */
-    hal_register_write(RG_IRQ_MASK, 0xFF);
+    hal_subregister_write(SR_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
   } else {
     /* Initialize and enable interrupts */
-    rf230_set_rpc(0xFF); /* Enable all RPC features. Only XRFR2 radios */
     radio_set_trx_state(RX_AACK_ON);
   }
 }
@@ -1075,6 +1151,53 @@ calibrate_rc_osc_32k(void)
 }
 #endif
 
+static void
+msc_init(void)
+{
+  uint8_t i;
+
+#include "rtimer-arch.h"
+  printf("RTIMER_ARCH_SECOND=%lu\n", RTIMER_ARCH_SECOND);
+  //  printf("US_TO_RTIMERTICKS=%lu\n",US_TO_RTIMERTICKS);
+  // printf("RTIMERTICKS_TO_US=%lu\n", RTIMERTICKS_TO_US);
+
+  //#define BACKOFF 1
+
+  /* Counter REG */
+  i = 0;
+  i |= 0x80; // Counter Sync.
+  /* i |= 0x40;  Disable Manual Beacon */
+  i |= 0x20; // Counter enable
+  i |= 0x10; // RTC clock
+  //i |= 0x08; // Auto timstamp Beacon, SFD
+  //i |= 0x01; // Rel compare 1 counter mode sel.
+  hal_subregister_write(SR_SCCR0, i);
+
+  /* Prescaler */
+  //hal_subregister_write(SR_SCCR1_CLKDIV, SCCKDIV_4M);
+  //hal_subregister_write(SR_SCCR1_CLKDIV, SCCKDIV_62_5k);
+  //hal_subregister_write(SR_SCCR1_SCBTSM , 1);
+
+#ifdef BACKOFF
+  hal_subregister_write(SR_SCCR1_SCENBO, 1);  // Enable Back off counter
+#endif
+
+  /* Clear IRQ status */
+  hal_subregister_write(SR_SCIRQS, 0xFF);
+
+  /* Enable IRQ  */
+  i = 0;
+#ifdef BACKOFF
+   i |= 0x10; // Backoff mask 640 us IRQ
+#endif
+  /* i |= 0x08; // Counter overflow mask */
+  i |= 0x01; // Compare 1 counter mask
+  /* i |= 0x02; // Compare 2 counter mask */
+  /* i |= 0x04; // Compare 3 counter mask */
+  /* i |= 0x04; // Compare 3 counter mask */
+  hal_subregister_write(SR_SCIRQM, i);
+}
+
 int
 rf230_init(void)
 {
@@ -1128,7 +1251,7 @@ rf230_init(void)
   PRINTF("rf230: Version %u, ID %u\n",tvers,tmanu);
   
   rf230_warm_reset();
- 
+  msc_init();
  /* Start the packet receive process */
   process_start(&rf230_process, NULL);
  
@@ -1620,13 +1743,6 @@ rf230_set_pan_addr(unsigned pan,
   }
 }
 
-/* From ISR context */
-void
-rf230_get_last_rx_packet_timestamp(void)
-{
-    rf230_last_rx_packet_timestamp = RTIMER_NOW();
-}
-
 /*---------------------------------------------------------------------------*/
 /*
  * Interrupt leaves frame intact in FIFO.
@@ -1690,7 +1806,7 @@ ISR(TRX24_RX_START_vect)
 #if !RF230_CONF_AUTOACK
     rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
 #endif
-    get_rx_packet_timestamp();
+    rf230_get_rx_packet_timestamp();
     if(!poll_mode) 
       rf230_interrupt(2);
 }
@@ -1723,6 +1839,44 @@ ISR(TRX24_RX_END_vect)
 		  rf230_pending = 1;
 		}
 	}
+}
+
+/* From ISR context */
+void
+rtimer_arch_schedule(rtimer_clock_t t)
+{
+  msc_write32( (volatile uint8_t *) RG_SCOCR1HH, t);
+}
+
+ISR(SCNT_CMP1_vect)
+{
+  rtimer_wait = 0;
+  watchdog_periodic();
+  /* Allow nested interrupts
+     Not nice but as tsch is expected
+     to run under an interrupt context
+     we need to open for some radio
+     interrupts as SFD time-stamping etc.
+
+     Seems using the Compare units 2,3
+     with this design can cause races.
+   */
+
+  sei();
+
+  rtimer_run_next();
+}
+
+ISR(SCNT_CMP2_vect)
+{
+}
+
+ISR(SCNT_CMP3_vect)
+{
+}
+
+ISR(SCNT_BACKOFF_vect)
+{
 }
 
 /* PLL has locked, either from a transition out of TRX_OFF or a channel change while on */

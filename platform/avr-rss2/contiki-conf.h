@@ -54,8 +54,25 @@
 #define F_CPU          8000000UL
 #endif
 
+
+/* Platform typedefs */
+typedef uint32_t clock_time_t;
+
+/* Clock (time) comparison macro */
+//#define CLOCK_LT(a, b)  ((signed long)((a) - (b)) < 0)
+
+/*
+ * rtimer.h typedefs rtimer_clock_t as unsigned short. We need to define
+ * RTIMER_CLOCK_DIFF to override this
+ */
+
+typedef uint32_t rtimer_clock_t;
+#define RTIMER_CLOCK_DIFF(a, b)     ((rtimer_clock_t)((a) - (b)))
+
+rtimer_clock_t rtimer_arch_now();
+
 /* Delay between GO signal and SFD */
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313))
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313)) //204
 /* Delay between GO signal and start listening */
 #define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(204))
 /* Delay between the SFD finishes arriving and it is detected in software */
@@ -65,7 +82,7 @@
 #define WITH_SEND_CCA 0
 #define RF230_CONF_AUTOACK 0
 #define RF230_CONF_AUTORETRIES 0
-#endif
+#endif /* tschmac_driver */
 
 #ifndef TSCH_CONF_RX_WAIT
 #define TSCH_CONF_RX_WAIT 1800
