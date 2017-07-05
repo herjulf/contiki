@@ -66,7 +66,7 @@ rtimer_arch_init(void)
 rtimer_clock_t
 rtimer_arch_now(void) 
 {
-KK  return (rtimer_clock_t) msc_get_counter();
+  return (rtimer_clock_t) msc_get_counter();
 }
 
 void
@@ -79,7 +79,7 @@ rtimer_arch_sleep(rtimer_clock_t howlong)
 
   rtimer_wait = 1;
   sei();
-  //while(rtimer_wait)
+  while(rtimer_wait)
     sleep_mode();
   watchdog_start();
 }

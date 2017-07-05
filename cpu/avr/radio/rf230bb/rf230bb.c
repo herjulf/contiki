@@ -152,7 +152,6 @@ static rtimer_clock_t rf230_last_rx_packet_timestamp;
 
 volatile uint8_t rtimer_wait;
 
-
 struct timestamp {
   uint16_t time;
   uint8_t authority_level;
@@ -346,15 +345,15 @@ void msc_sync_counter(void)
 #define RADIO_TO_RTIMER(X) ((uint32_t)((uint64_t)(X) * RTIMER_ARCH_SECOND / SYS_CTRL_16MHZ))
 
 /*---------------------------------------------------------------------------*/
-static inline rtimer_clock_t
+static inline void
 rf230_get_rx_packet_timestamp(void)
 {
   /* Save SFD timestamp, converted from radio timer to RTIMER */
-  rf230_last_rx_packet_timestamp = RTIMER_NOW();
   /* The remaining measured error is typically in range 0..16 usec.
    * Center it around zero, in the -8..+8 usec range. */
+  rf230_last_rx_packet_timestamp = RTIMER_NOW();
   rf230_last_rx_packet_timestamp -= US_TO_RTIMERTICKS(8);
- return rf230_last_rx_packet_timestamp;
+  return;
 }
 
 static void
@@ -363,9 +362,7 @@ set_poll_mode(bool enable)
   poll_mode = enable;
   if(poll_mode) {
     radio_set_trx_state(RX_ON);
-    hal_subregister_write(SR_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
   } else {
-    /* Initialize and enable interrupts */
     radio_set_trx_state(RX_AACK_ON);
   }
 }
@@ -1269,9 +1266,7 @@ void rf230_warm_reset(void) {
   PORTB &= ~(1<<7);
   DDRB  &= ~(1<<7);
 #endif
-  
-  // hal_subregister_write(SR_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
-  hal_register_write(RG_IRQ_MASK, 0xFF);
+  hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
 
 #if 0
   /* Set up number of automatic retries 0-15
@@ -1802,18 +1797,28 @@ if (RF230_receive_on) {
 
 ISR(TRX24_RX_START_vect)
 {
+  if(rf230_pending) {
+    /* don't save packet timestamp if a packet is already present */
+    return;
+  }
 /* Save RSSI for this packet if not in extended mode, scaling to 1dB resolution */
 #if !RF230_CONF_AUTOACK
     rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
 #endif
     rf230_get_rx_packet_timestamp();
-    if(!poll_mode) 
+    if(!poll_mode) {
       rf230_interrupt(2);
+    }
 }
 
 /* Received packet interrupt */
 ISR(TRX24_RX_END_vect)
 {
+  if(rf230_pending) {
+    /* don't read a packet if one is already present */
+    return;
+  }
+
 /* Get the rssi from ED if extended mode */
 #if RF230_CONF_AUTOACK
 	rf230_last_rssi=hal_register_read(RG_PHY_ED_LEVEL);

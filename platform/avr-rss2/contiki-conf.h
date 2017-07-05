@@ -67,12 +67,12 @@ typedef uint32_t clock_time_t;
  */
 
 typedef uint32_t rtimer_clock_t;
-#define RTIMER_CLOCK_DIFF(a, b)     ((rtimer_clock_t)((a) - (b)))
+#define RTIMER_CLOCK_DIFF(a, b)     ((int32_t)((a) - (b)))
 
 rtimer_clock_t rtimer_arch_now();
 
 /* Delay between GO signal and SFD */
-#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(313)) //204
+#define RADIO_DELAY_BEFORE_TX ((unsigned)US_TO_RTIMERTICKS(204)) //204
 /* Delay between GO signal and start listening */
 #define RADIO_DELAY_BEFORE_RX ((unsigned)US_TO_RTIMERTICKS(204))
 /* Delay between the SFD finishes arriving and it is detected in software */
