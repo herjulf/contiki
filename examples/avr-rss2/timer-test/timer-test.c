@@ -57,7 +57,7 @@ rt_callback(struct rtimer *t, void *ptr)
 {
   rt_now = RTIMER_NOW();
   ct = clock_time();
-  printf("Task called at %u (clock = %lu)\n", rt_now, ct);
+  leds_on(LEDS_RED);
 }
 #endif
 
@@ -93,6 +93,7 @@ PROCESS_THREAD(clock_test_process, ev, data)
   etimer_reset(&et);
 
   printf("RTIMER_SECOND = (%lu rtimer ticks):\n", RTIMER_SECOND);
+  printf("CLOCK_SECOND = (%i):\n", CLOCK_SECOND);
   printf("sizeof rtimer_clock_t = %d\n", sizeof(rtimer_clock_t));
   printf("sizeof clock_time_t = %d\n", sizeof(clock_time_t));
 
@@ -108,7 +109,7 @@ PROCESS_THREAD(clock_test_process, ev, data)
     }
     end_count = RTIMER_NOW();
     diff = end_count - start_count;
-    printf("Requested: %u usec, Real: %u rtimer ticks = ~%lu us\n",
+    printf("Requested: %u usec, Real: %lu rtimer ticks = ~%lu us\n",
            10000 * i, diff, diff * RTIMER_RES);
     i++;
   }
@@ -118,17 +119,19 @@ PROCESS_THREAD(clock_test_process, ev, data)
   printf("Rtimer Test, 1 sec (%lu rtimer ticks):\n", RTIMER_SECOND);
   i = 0;
   while(i < 5) {
-    etimer_set(&et, CLOCK_SECOND);
+    /* One sec extra for etimer to finish befor rtimer */
+    etimer_set(&et, CLOCK_SECOND*11); 
     printf("=======================\n");
     ct = clock_time();
     rt_now = RTIMER_NOW();
-    rt_for = rt_now + RTIMER_SECOND;
-    printf("Now=%u (clock = %lu) - For=%u\n", rt_now, ct, rt_for);
+    rt_for = rt_now + RTIMER_SECOND*10;
+    printf("Now=%lu (clock = %lu) Task scheduled for=%lu\n", rt_now, ct, rt_for);
     if(rtimer_set(&rt, rt_for, 1, (rtimer_callback_t) rt_callback, NULL) !=
        RTIMER_OK) {
       printf("Error setting\n");
     }
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+    printf("Task called at %lu (clock = %lu)\n", rt_now, ct);
     i++;
   }
 #endif
