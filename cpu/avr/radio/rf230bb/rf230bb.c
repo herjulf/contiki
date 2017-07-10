@@ -1266,9 +1266,9 @@ void rf230_warm_reset(void) {
   PORTB &= ~(1<<7);
   DDRB  &= ~(1<<7);
 #endif
-  hal_register_write(RG_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
 
-#if 0
+  hal_subregister_write(SR_IRQ_MASK, RF230_SUPPORTED_INTERRUPT_MASK);
+
   /* Set up number of automatic retries 0-15
    * (0 implies PLL_ON sends instead of the extended TX_ARET mode */
   hal_subregister_write(SR_MAX_FRAME_RETRIES,
@@ -1278,7 +1278,9 @@ void rf230_warm_reset(void) {
   hal_subregister_write(SR_MAX_CSMA_RETRIES, RF230_CONF_CSMA_RETRIES );//highest allowed retries
   hal_register_write(RG_CSMA_BE, 0x80);       //min backoff exponent 0, max 8 (highest allowed)
   hal_register_write(RG_CSMA_SEED_0,hal_register_read(RG_PHY_RSSI) );//upper two RSSI reg bits RND_VALUE are random in rf231
-#endif
+
+  printf("MAX_FRAME_RETRIES=%d ", hal_subregister_read(SR_MAX_FRAME_RETRIES));
+  printf("MAX_CSMA_RETRIES=%d\n", hal_subregister_read(SR_MAX_CSMA_RETRIES));
 
  // hal_register_write(CSMA_SEED_1,42 );
 
