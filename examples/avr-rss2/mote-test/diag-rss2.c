@@ -51,6 +51,7 @@
 #include "dev/light-sensor.h"
 #include "dev/pulse-sensor.h"
 #include "dev/bme280/bme280-sensor.h"
+#include "dev/button-sensor.h"
 
 #define T_OW_TEMP0       (1<<0)
 #define T_OW_TEMP1       (1<<1)
@@ -66,8 +67,7 @@
 #define T_RTC            (1<<11)
 #define T_RADIO          (1<<12)
 #define T_DC_IN          (1<<13)
-#define T_BUTTON         (1<<15)
-#define T_RADIO          (1<<16)
+#define T_BUTTON         (1<<14)
 
 #define DEF_TEST 0
 
@@ -77,7 +77,7 @@ volatile uint32_t test = DEF_TEST;  /* default test mask */
 uint32_t EEMEM ee_test = DEF_TEST;
 
 #if 1
-uint32_t test_mask =    (T_BME280|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC);
+uint32_t test_mask =    (T_BME280|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC|T_BUTTON);
 #else
 uint32_t test_mask =  (T_OW_TEMP0|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC);
 #endif
@@ -90,6 +90,7 @@ struct {
   double light;
   int p0;
   int p1;
+  int button;
 } init;
 
 int debug = 0;
@@ -151,6 +152,19 @@ test_v_in(void)
     blink();
     if(debug)
       printf("OK V_IN\n");
+  }
+}
+
+static void
+test_button(void)
+{
+  double v;
+  v = adc_read_a1();
+  if( init.button != button_sensor.value(0) ) {
+    test |= T_BUTTON;
+    blink();
+    if(debug)
+      printf("OK BUTTON\n");
   }
 }
 
@@ -300,6 +314,9 @@ print_test_values(uint32_t t)
   if((test_mask & T_BME280 && (t & T_BME280) == 0))
     printf(" I2C-BME280");
 
+  if((t & T_BUTTON) == 0)
+    printf(" BUTTON");
+
   if(t != test_mask) 
     printf("\n");
 
@@ -355,6 +372,9 @@ test_values(void)
   if((t & T_A2) == 0)
     test_a2();
 
+  if((t & T_BUTTON) == 0)
+    test_button();
+
   return  0;
 }
 
@@ -382,6 +402,8 @@ init_test(void)
     printf("ERROR P1 NOT 0\n");
 
   init.light = light_sensor.value(0);
+
+  init.button = button_sensor.value(0);
 }
 
 static void
@@ -411,6 +433,7 @@ read_values(void)
   printf(" LIGHT=%-d", light_sensor.value(0));
   printf(" PULSE_0=%-d", pulse_sensor.value(0));
   printf(" PULSE_1=%-d", pulse_sensor.value(1));
+  printf(" BUTTON=%-d", button_sensor.value(0));
   printf("\n");
 }
 
@@ -473,6 +496,7 @@ PROCESS_THREAD(rss2_test_process, ev, data)
   SENSORS_ACTIVATE(temp_mcu_sensor);
   SENSORS_ACTIVATE(light_sensor);
   SENSORS_ACTIVATE(pulse_sensor);
+  SENSORS_ACTIVATE(button_sensor);
 
   if( i2c_probed & I2C_BME280 ) {
     SENSORS_ACTIVATE(bme280_sensor);
