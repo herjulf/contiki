@@ -84,6 +84,7 @@
 #define CLI_PROJECT  ""
 #endif
 
+extern int debug;
 extern int retest;
 extern void test_status(void);
 extern void force_retest(void);
@@ -162,7 +163,7 @@ cmd_chan(uint8_t verbose)
 void
 debug_cmd(char *p)
 {
-  printf("To be added\n");
+  debug = 1;
 }
 void
 handle_serial_input(const char *line)
@@ -216,6 +217,11 @@ handle_serial_input(const char *line)
   }
   else if(!strcmp(p, "status") || !strcmp(p, "s")) {
     test_status();
+    printf("I2C: ");
+    i2c_probed = i2c_probe();
+    printf("\n");
+    read_values();
+    read_bme280();
   }
   else if(!strcmp(p, "help") || !strcmp(p, "h")) {
     print_help();

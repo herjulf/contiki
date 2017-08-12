@@ -53,23 +53,23 @@
 #include "dev/bme280/bme280-sensor.h"
 #include "dev/button-sensor.h"
 
-#define T_OW_TEMP0       (1<<0)
-#define T_OW_TEMP1       (1<<1)
-#define T_P0             (1<<2)
-#define T_P1             (1<<3)
-#define T_PP             (1<<4)
-#define T_V_IN           (1<<5)
-#define T_A1             (1<<6)
-#define T_A2             (1<<7)
-#define T_LIGHT          (1<<8)
-#define T_EUI64          (1<<9)
-#define T_BME280         (1<<10)
-#define T_RTC            (1<<11)
-#define T_RADIO          (1<<12)
-#define T_DC_IN          (1<<13)
-#define T_BUTTON         (1<<14)
+#define T_OW_TEMP0       ((uint32_t) ((uint32_t) 1)<<0)
+#define T_OW_TEMP1       ((uint32_t) ((uint32_t) 1)<<1)
+#define T_P0             ((uint32_t) ((uint32_t) 1)<<2)
+#define T_P1             ((uint32_t) ((uint32_t) 1)<<3)
+#define T_PP             ((uint32_t) ((uint32_t) 1)<<4)
+#define T_V_IN           ((uint32_t) ((uint32_t) 1)<<5)
+#define T_A1             ((uint32_t) ((uint32_t) 1)<<6)
+#define T_A2             ((uint32_t) ((uint32_t) 1)<<7)
+#define T_LIGHT          ((uint32_t) ((uint32_t) 1)<<8)
+#define T_EUI64          ((uint32_t) ((uint32_t) 1)<<9)
+#define T_BME280         ((uint32_t) ((uint32_t) 1)<<10)
+#define T_RTC            ((uint32_t) ((uint32_t) 1)<<11)
+#define T_RADIO          ((uint32_t) ((uint32_t) 1)<<12)
+#define T_DC_IN          ((uint32_t) ((uint32_t) 1)<<13)
+#define T_BUTTON         ((uint32_t) ((uint32_t) 1)<<14)
 
-#define DEF_TEST 0
+#define DEF_TEST 0 
 
 extern void handle_serial_input(const char *line);
 
@@ -77,7 +77,7 @@ volatile uint32_t test = DEF_TEST;  /* default test mask */
 uint32_t EEMEM ee_test = DEF_TEST;
 
 #if 1
-uint32_t test_mask =    (T_BME280|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC|T_BUTTON);
+uint32_t test_mask =   (T_BUTTON|T_RTC|T_BME280|T_EUI64|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT);
 #else
 uint32_t test_mask =  (T_OW_TEMP0|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC);
 #endif
@@ -142,6 +142,21 @@ test_i2c(void)
   }
 }
 
+void 
+read_bme280(void)
+{    
+    printf(" BME280_TEMP=%-d", bme280_sensor.value(BME280_SENSOR_TEMP));
+    printf(" BME280_RH=%-d", bme280_sensor.value(BME280_SENSOR_HUMIDITY));
+    printf(" BME280_P=%-d\n", bme280_sensor.value(BME280_SENSOR_PRESSURE));
+}
+
+static void
+test_bme280(void)
+{
+  read_bme280();
+  test |= T_BME280;
+}
+
 static void
 test_v_in(void)
 {
@@ -158,8 +173,6 @@ test_v_in(void)
 static void
 test_button(void)
 {
-  double v;
-  v = adc_read_a1();
   if( init.button != button_sensor.value(0) ) {
     test |= T_BUTTON;
     blink();
@@ -281,40 +294,40 @@ print_test_values(uint32_t t)
   if(t != test_mask) 
     printf("NOT TESTED:");
 
-  if((t & T_P0) == 0)
+  if(test_mask & T_P0 && (t & T_P0) == 0)
     printf(" P0");
 
-  if((t & T_P1) == 0)
+  if(test_mask & T_P1 && (t & T_P1) == 0)
     printf(" P1");
 
-  if((t & T_V_IN) == 0)
+  if(test_mask & T_V_IN && (t & T_V_IN) == 0)
     printf(" V_IN");
 
-  if((t & T_EUI64) == 0)
+  if(test_mask & T_EUI64 && (t & T_EUI64) == 0)
     printf(" EU64");
 
-  if((t & T_LIGHT) == 0)
+  if(test_mask & T_LIGHT && (t & T_LIGHT) == 0)
     printf(" LIGHT");
 
-  if((test_mask & T_OW_TEMP0 && (t & T_OW_TEMP0) == 0))
+  if(test_mask & T_OW_TEMP0 && ((t & T_OW_TEMP0) == 0))
     printf(" OW_TEMP0");
 
-  if((t & T_OW_TEMP1) == 0)
-    printf(" OW_TEMP1");
+  if(test_mask & T_OW_TEMP1 && ((t & T_OW_TEMP1) == 0))
+  printf(" OW_TEMP1");
 
-  if((t & T_A1) == 0)
+  if(test_mask & T_A1 && (t & T_A1) == 0)
     printf(" A1");
 
-  if((t & T_A2) == 0)
+  if(test_mask & T_A2 && (t & T_A2) == 0)
     printf(" A2");
 
-  if((t & T_EUI64) == 0)
-    printf(" I2C-EUI64");
+  if(test_mask & T_EUI64 && (t & T_EUI64) == 0)
+    printf(" I2C-EUI64"); // KOLLA
 
-  if((test_mask & T_BME280 && (t & T_BME280) == 0))
+  if(test_mask & T_BME280 && (t & T_BME280) == 0)
     printf(" I2C-BME280");
 
-  if((t & T_BUTTON) == 0)
+  if(test_mask & T_BUTTON && (t & T_BUTTON) == 0)
     printf(" BUTTON");
 
   if(t != test_mask) 
@@ -338,10 +351,10 @@ test_values(void)
 {
   uint32_t t;
 
-  if(debug)
-    printf("test_values=0x%lx test_mask=9x%lx\n", test, test_mask);
-
   t = test & test_mask;
+
+  if(debug)
+    printf("t=0x%lx test_values=0x%lx test_mask=0x%lx\n", t, test, test_mask);
   
   print_test_values(t);
 
@@ -360,10 +373,10 @@ test_values(void)
   if((t & T_LIGHT) == 0)
     test_light();
 
-  if((t & T_OW_TEMP0) == 0)
+  if(((test_mask & T_OW_TEMP0) && (t & T_OW_TEMP0) == 0))
     test_ow_temp0();
 
-  if((t & T_OW_TEMP1) == 0)
+  if(((test_mask & T_OW_TEMP1) && (t & T_OW_TEMP1) == 0))
     test_ow_temp1();
 
   if((t & T_A1) == 0)
@@ -390,8 +403,8 @@ init_test(void)
     printf("ERROR A1 NOT 0\n");
 
   init.a2 = adc_read_a2();
-  if(init.a1 != 0) 
-    printf("ERROR A1 NOT 0\n");
+  if(init.a2 != 0) 
+    printf("ERROR A2 NOT 0\n");
 
   init.p0 = pulse_sensor.value(0);
   if(init.p0 != 0) 
@@ -406,7 +419,7 @@ init_test(void)
   init.button = button_sensor.value(0);
 }
 
-static void
+void
 read_values(void)
 {
   char serial[16];
@@ -500,6 +513,7 @@ PROCESS_THREAD(rss2_test_process, ev, data)
 
   if( i2c_probed & I2C_BME280 ) {
     SENSORS_ACTIVATE(bme280_sensor);
+    test_bme280();
   }
 
   leds_init(); 
@@ -557,7 +571,7 @@ PROCESS_THREAD(programmable_power, ev, data)
   while(1) {
 
     PROCESS_WAIT_UNTIL(etimer_expired(&pp));
-    if(debug) 
+    if(debug > 2) 
       printf("In programmable power\n");
     
     PORTE ^= (1<<PWR_1);
