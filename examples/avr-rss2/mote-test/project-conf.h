@@ -48,4 +48,6 @@
 //#define NETSTACK_CONF_MAC         csma_driver
 //#define NETSTACK_CONF_RDC         contikimac_driver
 
+#define SERIAL_LINE_CONF_HUMAN 1
+
 #endif /* PROJECT_CONF_H_ */
