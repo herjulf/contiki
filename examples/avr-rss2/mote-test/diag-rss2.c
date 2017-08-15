@@ -35,12 +35,14 @@
  * \file
  *         HW test application for RSS2 mote
  */
-#define VERSION       "1.1-2017-05-07"
+#define VERSION       "1.1-2017-08-05"
 
+#include <stdio.h>
 #include <avr/eeprom.h>
 #include "contiki.h"
+#include "net/rime/rime.h"
+#include "random.h"
 #include "sys/etimer.h"
-#include <stdio.h>
 #include "adc.h"
 #include "i2c.h"
 #include "dev/leds.h"
@@ -78,7 +80,7 @@ volatile uint32_t test = DEF_TEST;  /* default test mask */
 uint32_t EEMEM ee_test = DEF_TEST;
 
 #if 1
-uint32_t test_mask =   (T_BUTTON|T_RTC|T_BME280|T_EUI64|T_P0|T_P1|T_V_MCU|T_V_IN|T_A1|T_A2|T_LIGHT);
+uint32_t test_mask =   (T_BUTTON|T_RTC|T_BME280|T_EUI64|T_P0|T_P1|T_V_MCU|T_V_IN|T_A1|T_A2|T_LIGHT|T_RADIO);
 #else
 uint32_t test_mask =  (T_OW_TEMP0|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC);
 #endif
@@ -94,12 +96,18 @@ struct {
   int button;
 } init;
 
+struct {
+  uint32_t rx_pkts;
+  uint32_t tx_pkts;
+} stats;
+
 int debug = 0;
 
+PROCESS(example_abc_process, "ABC example");
 PROCESS(rss2_test_process, "rss2 test process");
 PROCESS(programmable_power, "programmable power process");
 PROCESS(serial_in, "cli input process");
-AUTOSTART_PROCESSES(&rss2_test_process, &serial_in);
+AUTOSTART_PROCESSES(&rss2_test_process, &serial_in, &example_abc_process);
 
 static struct etimer et, pp;
 extern uint16_t ledtimer_red, ledtimer_yellow;
@@ -119,7 +127,7 @@ print_passed(void)
 }
 
 static void
-blink(voiD)
+blink(void)
 {
   ledtimer_red = ledtimer_yellow = 1000;
   leds_on(LEDS_YELLOW);
@@ -361,6 +369,9 @@ print_test_values(uint32_t t)
 
   if(test_mask & T_BUTTON && (t & T_BUTTON) == 0)
     printf(" BUTTON");
+
+  if(test_mask & T_RADIO && (t & T_RADIO) == 0)
+    printf(" RADIO");
 
   if(t != test_mask) 
     printf("\n");
@@ -625,6 +636,37 @@ PROCESS_THREAD(serial_in, ev, data)
   while(1) {
     PROCESS_WAIT_EVENT_UNTIL(ev == serial_line_event_message && data != NULL);
     handle_serial_input((const char *) data);
+  }
+  PROCESS_END();
+}
+
+static void
+abc_recv(struct abc_conn *c)
+{
+  test |= T_RADIO;
+  stats.rx_pkts++;
+  if(debug) 
+    printf("abc message received '%s'\n", (char *)packetbuf_dataptr());
+}
+
+static const struct abc_callbacks abc_call = {abc_recv};
+static struct abc_conn abc;
+
+PROCESS_THREAD(example_abc_process, ev, data)
+{
+  static struct etimer et;
+
+  PROCESS_EXITHANDLER(abc_close(&abc);)
+  PROCESS_BEGIN();
+  abc_open(&abc, 128, &abc_call);
+
+  while(1) {
+
+    etimer_set(&et, CLOCK_SECOND * 4);
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+    packetbuf_copyfrom("Hello", 6);
+    abc_send(&abc);
+    stats.tx_pkts++;
   }
   PROCESS_END();
 }

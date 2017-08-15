@@ -89,6 +89,11 @@ extern int retest;
 extern void test_status(void);
 extern void force_retest(void);
 
+extern struct {
+  uint32_t rx_pkts;
+  uint32_t tx_pkts;
+} stats;
+
 const char *delim = " \t\r,";
 #define END_OF_FILE 26
 uint8_t eof = END_OF_FILE;
@@ -107,7 +112,7 @@ print_help(void)
   printf("%s\n", CLI_PROJECT);
   printf("cli: version=%s", CLI_VERSION);
   printf("show version\n");
-  printf("show version\n");
+  printf("show stats\n");
   printf("set debug  -- select debug info\n");
   printf("i2c       -- probe i2c bus\n");
   printf("help         -- this menu\n");
@@ -160,6 +165,15 @@ cmd_chan(uint8_t verbose)
   }
   return 1;
 }
+
+static int
+cmd_show_stats()
+{
+  printf("rx-pkts %lu\n", stats.rx_pkts);
+  printf("tx-pkts %lu\n", stats.tx_pkts);
+  return 1;
+}
+
 void
 debug_cmd(char *p)
 {
@@ -186,6 +200,8 @@ handle_serial_input(const char *line)
         cmd_chan(1);
       } else if(!strcmp(p, "v") || !strcmp(p, "ver")) {
         printf("%s", CLI_VERSION);
+      } else if(!strcmp(p, "stat") || !strcmp(p, "stats")) {
+        cmd_show_stats();
       }
     }
   }
