@@ -35,7 +35,7 @@
  * \file
  *         HW test application for RSS2 mote
  */
-#define VERSION       "1.1-2017-08-05"
+#define VERSION       "1.1-2017-08-15"
 
 #include <stdio.h>
 #include <avr/eeprom.h>
@@ -62,15 +62,16 @@
 #define T_PP             ((uint32_t) ((uint32_t) 1)<<4)
 #define T_V_IN           ((uint32_t) ((uint32_t) 1)<<5)
 #define T_V_MCU          ((uint32_t) ((uint32_t) 1)<<6)
-#define T_A1             ((uint32_t) ((uint32_t) 1)<<7)
-#define T_A2             ((uint32_t) ((uint32_t) 1)<<8)
-#define T_LIGHT          ((uint32_t) ((uint32_t) 1)<<9)
-#define T_EUI64          ((uint32_t) ((uint32_t) 1)<<10)
-#define T_BME280         ((uint32_t) ((uint32_t) 1)<<11)
-#define T_RTC            ((uint32_t) ((uint32_t) 1)<<12)
-#define T_RADIO          ((uint32_t) ((uint32_t) 1)<<13)
-#define T_DC_IN          ((uint32_t) ((uint32_t) 1)<<14)
-#define T_BUTTON         ((uint32_t) ((uint32_t) 1)<<15)
+#define T_T_MCU          ((uint32_t) ((uint32_t) 1)<<7)
+#define T_A1             ((uint32_t) ((uint32_t) 1)<<8)
+#define T_A2             ((uint32_t) ((uint32_t) 1)<<9)
+#define T_LIGHT          ((uint32_t) ((uint32_t) 1)<<10)
+#define T_EUI64          ((uint32_t) ((uint32_t) 1)<<11)
+#define T_BME280         ((uint32_t) ((uint32_t) 1)<<12)
+#define T_RTC            ((uint32_t) ((uint32_t) 1)<<13)
+#define T_RADIO          ((uint32_t) ((uint32_t) 1)<<14)
+#define T_DC_IN          ((uint32_t) ((uint32_t) 1)<<15)
+#define T_BUTTON         ((uint32_t) ((uint32_t) 1)<<16)
 
 #define DEF_TEST 0 
 
@@ -80,7 +81,7 @@ volatile uint32_t test = DEF_TEST;  /* default test mask */
 uint32_t EEMEM ee_test = DEF_TEST;
 
 #if 1
-uint32_t test_mask =   (T_BUTTON|T_RTC|T_BME280|T_EUI64|T_P0|T_P1|T_V_MCU|T_V_IN|T_A1|T_A2|T_LIGHT|T_RADIO);
+uint32_t test_mask =   (T_BUTTON|T_RTC|T_BME280|T_EUI64|T_P0|T_P1|T_V_MCU|T_T_MCU|T_V_IN|T_A1|T_A2|T_LIGHT|T_RADIO);
 #else
 uint32_t test_mask =  (T_OW_TEMP0|T_OW_TEMP1|T_P0|T_P1|T_V_IN|T_A1|T_A2|T_LIGHT|T_EUI64|T_RTC);
 #endif
@@ -204,6 +205,19 @@ test_v_mcu(void)
     blink();
     if(debug)
       printf("OK V_MCU\n");
+  }
+}
+
+static void
+test_t_mcu(void)
+{
+  double t;
+  t = ((double) temp_mcu_sensor.value(0)/10.);
+  if( t > 15 && t < 38 ) {
+    test |= T_T_MCU;
+    blink();
+    if(debug)
+      printf("OK T_MCU\n");
   }
 }
 
@@ -343,6 +357,9 @@ print_test_values(uint32_t t)
   if(test_mask & T_V_MCU && (t & T_V_MCU) == 0)
     printf(" V_MCU");
 
+  if(test_mask & T_T_MCU && (t & T_T_MCU) == 0)
+    printf(" T_MCU");
+
   if(test_mask & T_EUI64 && (t & T_EUI64) == 0)
     printf(" EU64");
 
@@ -412,6 +429,9 @@ test_values(void)
 
   if((t & T_V_MCU) == 0)
     test_v_mcu();
+
+  if((t & T_T_MCU) == 0)
+    test_t_mcu();
 
   if((t & T_EUI64) == 0)
     test_eui64();
