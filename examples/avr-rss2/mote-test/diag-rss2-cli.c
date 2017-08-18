@@ -89,6 +89,10 @@ extern int retest;
 extern void test_status(void);
 extern void force_retest(void);
 
+extern void at24mac_print(int eof);
+extern int read_bme280(void);
+void read_values(void);
+
 extern struct {
   uint32_t rx_pkts;
   uint32_t tx_pkts;
@@ -114,11 +118,12 @@ print_help(void)
   printf("show version\n");
   printf("show stats\n");
   printf("set debug  -- select debug info\n");
-  printf("i2c       -- probe i2c bus\n");
-  printf("help         -- this menu\n");
-  printf("retest       -- restart test\n");
-  printf("status       -- test status\n");
-  printf("upgr         -- reboot via bootloader\n");
+  printf("i2c        -- probe i2c bus\n");
+  printf("help       -- this menu\n");
+  printf("retest     -- restart test\n");
+  printf("ss         -- system summary\n");
+  printf("eui64      -- system summary\n");
+  printf("upgr       -- reboot via bootloader\n");
 
   printf("Uptime %lu sec\n", clock_seconds());
 }
@@ -231,13 +236,16 @@ handle_serial_input(const char *line)
   else if(!strcmp(p, "retest") || !strcmp(p, "r")) {
     force_retest();
   }
-  else if(!strcmp(p, "status") || !strcmp(p, "s")) {
+  else if(!strcmp(p, "status") || !strcmp(p, "ss")) {
     test_status();
     printf("I2C: ");
     i2c_probed = i2c_probe();
     printf("\n");
     read_values();
     read_bme280();
+  }
+  else if(!strcmp(p, "eui64") || !strcmp(p, "eui")) {
+    at24mac_print(1);
   }
   else if(!strcmp(p, "help") || !strcmp(p, "h")) {
     print_help();

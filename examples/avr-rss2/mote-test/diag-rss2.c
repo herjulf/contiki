@@ -74,6 +74,7 @@
 #define T_BUTTON         ((uint32_t) ((uint32_t) 1)<<16)
 
 #define DEF_TEST 0 
+#define END_OF_FILE 26
 
 extern void handle_serial_input(const char *line);
 
@@ -296,6 +297,20 @@ test_eui64(void)
   }
 }
 
+void at24mac_print(int eof)
+{
+  uint8_t  i, buf[16];
+  
+  memset(buf, 0, sizeof(buf));
+  i2c_read_mem(I2C_AT24MAC_ADDR, 0x98, buf, 8);
+  for(i=0; i < 7; i++)
+    printf("%02x", buf[i]);
+  printf("%02x\n", buf[7]);
+
+  if(eof) 
+    printf("%c", END_OF_FILE); /* For tty_talk ID printing */
+}
+
 static void
 test_light(void)
 {
@@ -499,6 +514,7 @@ read_values(void)
     printf(" Clock Seconds=%-lu\n", cs);
  
  /* Read out rss2 unique 128 bit ID */
+  at24mac_print(0);
   i2c_at24mac_read((char *) &serial, 0);
   printf("128_bit_ID=");
   for(i=0; i < 15; i++)
