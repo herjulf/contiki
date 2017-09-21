@@ -96,6 +96,9 @@ send_packet(void *ptr)
   char buf[MAX_PAYLOAD_LEN];
   int len = 0;
 
+  if(!tsch_is_associated) 
+    return;
+
   seq_id++;
 
   len += snprintf((char *) &buf[len], sizeof(buf), "&: ");
@@ -177,7 +180,7 @@ set_global_address(void)
 PROCESS_THREAD(udp_client_process, ev, data)
 {
   static struct etimer periodic;
-  static struct ctimer backoff_timer;
+  static struct ctimer send_timer;
 #if WITH_COMPOWER
   static int print = 0;
 #endif
@@ -226,7 +229,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
     }
     if(etimer_expired(&periodic)) {
       etimer_reset(&periodic);
-      ctimer_set(&backoff_timer, SEND_TIME, send_packet, NULL);
+      ctimer_set(&send_timer, SEND_TIME, send_packet, NULL);
 
 #if WITH_COMPOWER
       if (print == 0) {
