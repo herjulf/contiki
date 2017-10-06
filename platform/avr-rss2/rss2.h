@@ -1,9 +1,10 @@
 
 /*
-   Pin assigments for Radio Sensors board revision 2.3
-   using MCU AtMega128rfa1
+   Pin assigments for Radio Sensors board revision 2.3/2.4
+   using MCUAtMega128rfa1/AtMega256rfr2
  */
 
+#define BUTTON       PB0 /* Rev 2.4 only */
 #define ISP_1        PB1 /* SCK */
 #define ISP_2        PB2 /* MOSI */
 #define ISP_3        PB3 /* MISO */
