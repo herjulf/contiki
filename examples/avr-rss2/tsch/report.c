@@ -36,6 +36,7 @@
 #include "sys/ctimer.h"
 #include "dev/leds.h"
 #ifdef CONTIKI_TARGET_AVR_RSS2
+#include "dev/battery-sensor.h"
 #include "dev/temp_mcu-sensor.h"
 #endif
 #ifdef WITH_COMPOWER
@@ -93,6 +94,9 @@ send_packet(void *ptr)
   static int seq_id;
   char buf[MAX_PAYLOAD_LEN];
   int len = 0;
+
+  if(!tsch_is_associated) 
+    return;
 
   seq_id++;
 
@@ -173,7 +177,7 @@ set_global_address(void)
 PROCESS_THREAD(udp_client_process, ev, data)
 {
   static struct etimer periodic;
-  static struct ctimer backoff_timer;
+  static struct ctimer send_timer;
 #if WITH_COMPOWER
   static int print = 0;
 #endif
@@ -182,6 +186,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
   PROCESS_PAUSE();
 
 #ifdef CONTIKI_TARGET_AVR_RSS2
+  SENSORS_ACTIVATE(battery_sensor);
   SENSORS_ACTIVATE(temp_mcu_sensor);
 #endif
   set_global_address();
@@ -220,7 +225,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
     }
     if(etimer_expired(&periodic)) {
       etimer_reset(&periodic);
-      ctimer_set(&backoff_timer, SEND_TIME, send_packet, NULL);
+      ctimer_set(&send_timer, SEND_TIME, send_packet, NULL);
 
 #if WITH_COMPOWER
       if (print == 0) {
