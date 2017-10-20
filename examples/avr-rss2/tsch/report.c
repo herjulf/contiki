@@ -38,6 +38,7 @@
 #ifdef CONTIKI_TARGET_AVR_RSS2
 #include "dev/battery-sensor.h"
 #include "dev/temp_mcu-sensor.h"
+#include "dev/light-sensor.h"
 #endif
 #ifdef WITH_COMPOWER
 #include "powertrace.h"
@@ -188,10 +189,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
 #ifdef CONTIKI_TARGET_AVR_RSS2
   SENSORS_ACTIVATE(battery_sensor);
   SENSORS_ACTIVATE(temp_mcu_sensor);
-<<<<<<< HEAD
-=======
   SENSORS_ACTIVATE(light_sensor);
->>>>>>> aa15201c3a5e5477d7f1443059737c3f08471339
 #endif
   set_global_address();
   leds_init();
