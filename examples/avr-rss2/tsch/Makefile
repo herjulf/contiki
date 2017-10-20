@@ -2,7 +2,7 @@ PERIOD=2
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 
-all: report sink
+all: sink report 
 APPS=servreg-hack
 CONTIKI=../../..
 

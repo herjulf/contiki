@@ -38,7 +38,6 @@
 #ifdef CONTIKI_TARGET_AVR_RSS2
 #include "dev/battery-sensor.h"
 #include "dev/temp_mcu-sensor.h"
-#include "dev/light-sensor.h"
 #endif
 #ifdef WITH_COMPOWER
 #include "powertrace.h"
@@ -102,9 +101,6 @@ send_packet(void *ptr)
   seq_id++;
 
   len += snprintf((char *) &buf[len], sizeof(buf), "&: ");
-#ifdef CONTIKI_TARGET_AVR_RSS2
-  len += snprintf((char *) &buf[len], sizeof(buf), "V_MCU=%-d ", battery_sensor.value(0));
-#endif
   len += snprintf((char *) &buf[len], sizeof(buf), "SEQ=%-d ", seq_id);
 
   /* 
@@ -114,7 +110,6 @@ send_packet(void *ptr)
   if(node_id == 0) {
 #ifdef CONTIKI_TARGET_AVR_RSS2
     len += snprintf((char *) &buf[len], sizeof(buf), "T_MCU=%-d ", temp_mcu_sensor.value(0));
-    len += snprintf((char *) &buf[len], sizeof(buf), "LIGHT=%-d ", light_sensor.value(0));
 #endif
   }
   PRINTF("TX %d to %d %s\n",
@@ -193,7 +188,10 @@ PROCESS_THREAD(udp_client_process, ev, data)
 #ifdef CONTIKI_TARGET_AVR_RSS2
   SENSORS_ACTIVATE(battery_sensor);
   SENSORS_ACTIVATE(temp_mcu_sensor);
+<<<<<<< HEAD
+=======
   SENSORS_ACTIVATE(light_sensor);
+>>>>>>> aa15201c3a5e5477d7f1443059737c3f08471339
 #endif
   set_global_address();
   leds_init();
