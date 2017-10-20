@@ -53,7 +53,7 @@
 
 /* Set to run orchestra */
 #ifndef WITH_ORCHESTRA
-#define WITH_ORCHESTRA 1
+#define WITH_ORCHESTRA 0
 #endif /* WITH_ORCHESTRA */
 
 /*******************************************************/
@@ -105,7 +105,11 @@
 #define TSCH_CONF_ADAPTIVE_TIMESYNC 0
 #define TSCH_CONF_HW_FRAME_FILTERING 0
 #define TSCH_CONF_RESYNC_WITH_SFD_TIMESTAMPS 0
-#define TSCH_CONF_EB_PERIOD    (3 * CLOCK_SECOND)
+#define TSCH_CONF_EB_PERIOD    (1 * CLOCK_SECOND)
+#define TSCH_CONF_TIMESYNC_REMOVE_JITTER 1
 #endif
+
+#define TSCH_CONF_MAX_EB_PERIOD    (3 * TSCH_CONF_EB_PERIOD)
+
 
 #endif /* PROJECT_CONF_H_ */
