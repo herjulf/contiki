@@ -603,7 +603,8 @@ static radio_result_t
 get_object(radio_param_t param, void *dest, size_t size)
 {
   if(param == RADIO_PARAM_LAST_PACKET_TIMESTAMP) {
-    if(size != sizeof(rtimer_clock_t) || !dest) {
+    if((size != sizeof(rtimer_clock_t)) || !dest) {
+
       return RADIO_RESULT_INVALID_VALUE;
     }
     *(rtimer_clock_t *)dest = rf230_last_rx_packet_timestamp;
@@ -1165,7 +1166,7 @@ msc_init(void)
   i |= 0x80; // Counter Sync.
   /* i |= 0x40;  Disable Manual Beacon */
   i |= 0x20; // Counter enable
-  i |= 0x10; // RTC clock
+  //i |= 0x10; // RTC clock
   //i |= 0x08; // Auto timstamp Beacon, SFD
   //i |= 0x01; // Rel compare 1 counter mode sel.
   hal_subregister_write(SR_SCCR0, i);
