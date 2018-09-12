@@ -56,10 +56,10 @@ which is the critera for the program.
 
 It's suggested to use PWR PIN (middle pin) from CON_ADC1 for
 the the tests above.  Best to use a jumper cable.
-* PWR PIN/CON_ADC -->  PWR_PIN on P0
-* PWR PIN/CON_ADC -->  PWR_PIN on P1
-* PWR PIN/CON_ADC -->  PWR_PIN on A1
-* PWR PIN/CON_ADC -->  PWR_PIN on A2
+* CON_INT5:    GND to CON_INT5 --> P0 
+* CON_COMP:    Close pins --> P1
+* COM_ADC1:    PWR_PIN to COM_ADC1 --> A1
+* COM_ADC2:    PWR_PIN to COM_ADC2 --> A2
 
 P0 (Pulse interupt) CON_INT5 (upper pin)
 P1 (Pulse interupt comprator) CON_COMP (Rightmost pin)

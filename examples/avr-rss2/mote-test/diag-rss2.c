@@ -35,7 +35,7 @@
  * \file
  *         HW test application for RSS2 mote
  */
-#define VERSION       "1.1-2017-08-15"
+#define VERSION       "1.2-2018-10-11"
 
 #include <stdio.h>
 #include <avr/eeprom.h>
