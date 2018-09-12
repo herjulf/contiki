@@ -229,7 +229,7 @@ test_button(void)
     test |= T_BUTTON;
     blink();
     if(debug)
-      printf("OK BUTTON\n");
+      printf("OK BUTTON (S2)\n");
   }
 }
 
