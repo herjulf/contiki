@@ -32,6 +32,5 @@
 /* 16 MHz  xtal */
 /* RTC 32.768 Hz  xtal */
 
-/*Optional HIH610 connected on SPI */
-#define HUM_PWR      PE2 /* Power pin for HIH6130 also to ena. HIH 6130 Alarm mode */
+#define HUM_PWR      PE2 /* NOT USED */
 
