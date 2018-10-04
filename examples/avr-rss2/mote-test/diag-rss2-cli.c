@@ -45,7 +45,7 @@
  *         Robert Olsson    <roolss@kth.se>
  */
 
-#define CLI_VERSION "0.9-2017-03-13\n"
+#define CLI_VERSION "1.0-2018-10-04\n"
 
 #if CONTIKI_TARGET_AVR_RSS2
 #define radio_set_txpower rf230_set_txpower
@@ -115,14 +115,13 @@ print_help(void)
 {
   printf("%s\n", CLI_PROJECT);
   printf("cli: version=%s", CLI_VERSION);
-  printf("show version\n");
-  printf("show stats\n");
-  printf("set debug  -- select debug info\n");
+  printf("show stats|ch|ver|\n");
+  printf("set debug\n");
   printf("i2c        -- probe i2c bus\n");
   printf("help       -- this menu\n");
   printf("retest     -- restart test\n");
   printf("ss         -- system summary\n");
-  printf("eui64      -- system summary\n");
+  printf("eui64      -- EUI64 MAC addr\n");
   printf("upgr       -- reboot via bootloader\n");
 
   printf("Uptime %lu sec\n", clock_seconds());
@@ -211,7 +210,7 @@ handle_serial_input(const char *line)
     }
   }
   /* Set commands */
-  else if(!strcmp(p, "sh") || !strcmp(p, "sho") || !strcmp(p, "show")) {
+  else if(!strcmp(p, "set") ) {
     p = strtok(NULL, (const char *)delim);
     if(p) {
       if(!strcmp(p, "de") || !strcmp(p, "debug")) {

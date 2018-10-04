@@ -35,7 +35,7 @@
  * \file
  *         HW test application for RSS2 mote
  */
-#define VERSION       "1.2-2018-10-11"
+#define VERSION       "1.3-2018-10-04"
 
 #include <stdio.h>
 #include <avr/eeprom.h>
@@ -162,9 +162,9 @@ read_bme280(void)
   
   int res = 0;
 
-  if( t > 5 && t < 35 ) {
+  if( t > 5 && t < 37 ) {
     if( rh > 5 && rh < 100 ) {
-      if( p> 9000 && rh < 11500 ) {
+      if( p> 9000 && rh < 12000 ) {
 	res = 1;
       }
     }
@@ -569,6 +569,19 @@ PROCESS_THREAD(rss2_test_process, ev, data)
     }
   }
 
+  print_version();
+  SENSORS_ACTIVATE(temp_sensor);
+  SENSORS_ACTIVATE(battery_sensor);
+  SENSORS_ACTIVATE(temp_mcu_sensor);
+  SENSORS_ACTIVATE(light_sensor);
+  SENSORS_ACTIVATE(pulse_sensor);
+  SENSORS_ACTIVATE(button_sensor);
+
+  if( i2c_probed & I2C_BME280 ) {
+    SENSORS_ACTIVATE(bme280_sensor);
+    read_bme280();
+  }
+
   etimer_set(&et, CLOCK_SECOND/4);
   while(!retest) {
     PROCESS_WAIT_UNTIL(etimer_expired(&et));
@@ -587,16 +600,7 @@ PROCESS_THREAD(rss2_test_process, ev, data)
     eeprom_write_block((void*)&test, (void*)&ee_test, sizeof(test));
   }
 
-  print_version();
-  SENSORS_ACTIVATE(temp_sensor);
-  SENSORS_ACTIVATE(battery_sensor);
-  SENSORS_ACTIVATE(temp_mcu_sensor);
-  SENSORS_ACTIVATE(light_sensor);
-  SENSORS_ACTIVATE(pulse_sensor);
-  SENSORS_ACTIVATE(button_sensor);
-
   if( i2c_probed & I2C_BME280 ) {
-    SENSORS_ACTIVATE(bme280_sensor);
     test_bme280();
   }
 
