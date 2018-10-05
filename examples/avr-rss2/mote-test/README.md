@@ -5,6 +5,10 @@ Typically this is run after assembly. Serial bootloader
 is expcted first next diag-rss2 can be flashed via the 
 serial bootloader. See separate avrdude command below.
 
+Document Version
+----------------
+Ver 1.1-2018-10-05
+
 Usage
 ------
 Please read this intruction carefully. To test and 
@@ -58,8 +62,8 @@ It's suggested to use PWR PIN (middle pin) from CON_ADC1 for
 the the tests above.  Best to use a jumper cable.
 * CON_INT5:    GND to CON_INT5 --> P0 
 * CON_COMP:    Close pins --> P1
-* COM_ADC1:    PWR_PIN to COM_ADC1 --> A1
-* COM_ADC2:    PWR_PIN to COM_ADC2 --> A2
+* COM_ADC1:    PWR_PIN(on CON_ADC1) to COM_ADC1 --> A1
+* COM_ADC2:    PWR_PIN(on CON_ADC1) to COM_ADC2 --> A2
 
 P0 (Pulse interupt) CON_INT5 (upper pin)
 P1 (Pulse interupt comprator) CON_COMP (Rightmost pin)
@@ -86,13 +90,13 @@ NOT TESTED: P0 P1 A1 A2 BUTTON <--- Pressing S2 button
 NOT TESTED: P0 P1 A1 A2
 NOT TESTED: P0 P1 A1 A2
 NOT TESTED: P0 P1 A1 A2
-NOT TESTED: P0 P1 A1 A2   <<--- Connecting PWR_PIN on P1
+NOT TESTED: P0 P1 A1 A2   <<--- Closing CON_COMP
 NOT TESTED: P0 A1 A2
-NOT TESTED: P0 A1 A2  <<--- Connecting PWR_PIN on P0
+NOT TESTED: P0 A1 A2  <<--- Connecting P0/CON_INT5 to GND
 NOT TESTED: A1 A2
-NOT TESTED: A1 A2  <<--- Connecting PWR_PIN on A1
+NOT TESTED: A1 A2  <<--- Connecting PWR_PIN/CON_ADC1 to A1
 NOT TESTED: A2 
-NOT TESTED: A2  <<--- Connecting PWR_PIN on A2
+NOT TESTED: A2  <<--- Connecting PWR_PIN/CON_ADC1 to ADC_2
 
 PASSED! BOTH LEDS SHOULD BE FLASHING. RESULT STORED IN EEPROM
 
